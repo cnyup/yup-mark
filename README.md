@@ -1,10 +1,23 @@
 # SoyupMark
 
+[![CI](https://github.com/cnyup/yup-mark/actions/workflows/ci.yml/badge.svg)](https://github.com/cnyup/yup-mark/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/cnyup/yup-mark?display_name=tag&sort=semver)](https://github.com/cnyup/yup-mark/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 [中文](#中文) | [English](#english)
 
 ## 中文
 
 一个开源、免费、类 [Typora](https://typora.io/) 的所见即所得 Markdown 编辑器。
+
+### 下载
+
+前往 [Releases](https://github.com/cnyup/yup-mark/releases) 下载最新版本：
+
+- **macOS**：`.dmg`（arm64 / x64）
+- **Windows**：`.exe` 安装包（x64）
+
+> macOS 安装包未做签名公证，首次打开请右键点击应用选择「打开」。
 
 **当前状态：M4 完成（打磨收尾）** —— Typora 式渲染态编辑（标记就近淡显）+ 文件管理 + 扩展语法（公式/图表/表格）+ 视图三件套（源码 ⌘/ · 专注 F8 · 打字机 F9）+ 主题系统（内置多套、亮暗跟随系统、CSS 变量架构）、设置页（⌘,）、菜单与界面中英双语、快捷键与 Typora 官方双平台对齐。
 
@@ -47,6 +60,15 @@ Electron · React · TypeScript · CodeMirror 6 · lezer-markdown · zustand · 
 ## English
 
 An open-source, free, [Typora](https://typora.io/)-like WYSIWYG Markdown editor.
+
+### Download
+
+Grab the latest build from [Releases](https://github.com/cnyup/yup-mark/releases):
+
+- **macOS**: `.dmg` (arm64 / x64)
+- **Windows**: `.exe` installer (x64)
+
+> macOS builds are unsigned — right-click the app and choose "Open" on first launch.
 
 **Current status: M4 complete (polishing)** — Typora-style live rendering (in-place marker reveal), file management, math/mermaid/tables, view modes (source ⌘/ · focus F8 · typewriter F9), theme system, bilingual UI, Typora-aligned shortcuts.
 
