@@ -26,7 +26,7 @@ const LABELS = {
     typewriterMode: 'Typewriter Mode',
     preferences: 'Preferences…',
     help: 'Help',
-    about: 'About SoyupMark',
+    about: 'About YupMark',
   },
   zh: {
     file: '文件',
@@ -46,7 +46,7 @@ const LABELS = {
     typewriterMode: '打字机模式',
     preferences: '偏好设置…',
     help: '帮助',
-    about: '关于 SoyupMark',
+    about: '关于 YupMark',
   },
 } as const
 
@@ -68,8 +68,8 @@ function broadcast(action: MenuAction): void {
 function showAbout(): void {
   void dialog.showMessageBox({
     type: 'info',
-    title: 'SoyupMark',
-    message: 'SoyupMark',
+    title: 'YupMark',
+    message: 'YupMark',
     detail: `Version ${app.getVersion()}\nAn open-source, Typora-like Markdown editor.\nMIT License`,
   })
 }

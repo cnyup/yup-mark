@@ -201,7 +201,7 @@ async function renderMermaid(el: HTMLElement, code: string): Promise<void> {
       mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: currentMermaidTheme })
       mermaidReady = true
     }
-    const { svg } = await mermaid.render(`soyup-mermaid-${mermaidSeq++}`, code)
+    const { svg } = await mermaid.render(`yup-mermaid-${mermaidSeq++}`, code)
     el.innerHTML = svg
   } catch (err) {
     el.classList.add('cm-mermaid-wrap--error')

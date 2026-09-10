@@ -35,13 +35,13 @@ function resetStore(): void {
 
 beforeEach(() => {
   resetStore()
-  window.soyupmark = {
+  window.yupmark = {
     watchDir: vi.fn().mockResolvedValue({ ok: true, data: null }),
     unwatchDir: vi.fn().mockResolvedValue({ ok: true, data: null }),
     saveFile: vi.fn().mockResolvedValue({ ok: true, data: null }),
     readFile: vi.fn(),
     saveSession: vi.fn().mockResolvedValue({ ok: true, data: null }),
-  } as unknown as typeof window.soyupmark
+  } as unknown as typeof window.yupmark
 })
 
 describe('workspaceStore 多标签逻辑', () => {
@@ -114,7 +114,7 @@ describe('workspaceStore 多标签逻辑', () => {
     store.attachView(view)
     useWorkspaceStore.getState().openDoc('/a/one.md', 'one')
 
-    ;(window.soyupmark.readFile as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, data: 'one-new' })
+    ;(window.yupmark.readFile as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, data: 'one-new' })
     useWorkspaceStore.getState().handleFsEvent({ dir: '/a', file: 'one.md' })
     // 异步流程
     await new Promise((r) => setTimeout(r, 10))
@@ -136,7 +136,7 @@ describe('workspaceStore 多标签逻辑', () => {
     view.dispatch({ changes: { from: 0, to: 3, insert: 'MY' } })
     useWorkspaceStore.getState().onDocChanged()
 
-    ;(window.soyupmark.readFile as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, data: 'disk-version' })
+    ;(window.yupmark.readFile as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, data: 'disk-version' })
     useWorkspaceStore.getState().handleFsEvent({ dir: '/a', file: 'one.md' })
     await new Promise((r) => setTimeout(r, 10))
 
@@ -155,7 +155,7 @@ describe('workspaceStore 多标签逻辑', () => {
     view.dispatch({ changes: { from: 0, to: 3, insert: 'MY' } })
     useWorkspaceStore.getState().onDocChanged()
 
-    ;(window.soyupmark.readFile as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, data: 'disk-version' })
+    ;(window.yupmark.readFile as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, data: 'disk-version' })
     useWorkspaceStore.getState().handleFsEvent({ dir: '/a', file: 'one.md' })
     await new Promise((r) => setTimeout(r, 10))
 

@@ -1,4 +1,4 @@
-# SoyupMark 设计方案
+# YupMark 设计方案
 
 > 一个类 Typora 的所见即所得 Markdown 编辑器。开源、跨 macOS 与 Windows。
 >
@@ -28,7 +28,7 @@ Typora 的本质：文档由"块"（block）组成；**所有块始终渲染为�
 
 ### 1.3 产品名
 
-`SoyupMark`（仓库目录已定名）。npm 包 / 应用 ID 统一使用小写 `soyupmark`。
+`YupMark`（仓库目录已定名）。npm 包 / 应用 ID 统一使用小写 `yupmark`。
 
 ---
 
@@ -64,7 +64,7 @@ Typora 的本质：文档由"块"（block）组成；**所有块始终渲染为�
 │                     ┌────▼─────────────────────────┐          │
 │                     │ EditorHost                   │          │
 │                     │  ┌────────────────────────┐  │          │
-│                     │  │ @soyupmark/live-cm     │  │          │
+│                     │  │ @yupmark/live-cm     │  │          │
 │                     │  │ (纯 TS，零 React 依赖)  │  │          │
 │                     │  │  LiveRenderEngine      │  │          │
 │                     │  │  BlockModel(AST)       │  │          │
@@ -90,7 +90,7 @@ Typora 的本质：文档由"块"（block）组成；**所有块始终渲染为�
 
 ### 3.2 核心资产独立性
 
-`src/renderer/editor`（对外的包名 `@soyupmark/live-cm`）必须是**纯 TypeScript、零 React、零 Electron 依赖**的可独立测试模块：
+`src/renderer/editor`（对外的包名 `@yupmark/live-cm`）必须是**纯 TypeScript、零 React、零 Electron 依赖**的可独立测试模块：
 
 - 可以在纯浏览器环境跑单测和 Storybook 式 playground；
 - 未来可单独发包，成为项目最核心的开源卖点（一个 CM6 版的 Typora 引擎）；
@@ -212,8 +212,8 @@ Typora 主题 = 一份用户 CSS。我们的兼容策略（v0.1 边界）：
 
 - **变量命名兼容**：基础变量与 Typora 主题同名同义（`--bg-color`、`--text-color`、`--side-bar-bg-color` 等），变量值可直接互搬；
 - **选择器不兼容**（明确不支持，完整边界见 theme-compat.md）：渲染 DOM 是 CodeMirror 行结构（`.cm-h-line.cm-h1`、`.cm-table` 等），Typora 的 `#write h1`、`.md-diagram-panel` 等选择器规则不互通；选择器级兼容列为 v2 方向；
-- 内置主题 7 套：`soyup`（默认玫粉）、`github`、`notion`、`newsprint`（衬线正文）、`purple`、`github-dark`、`dracula`——后两套覆盖整套窗口配色（含 `--syntax-*` 语法高亮），亮色主题只覆盖排版变量；
-- 切换机制：`html[data-theme]` 属性 + localStorage 持久化（`settingsPersist.ts`），`auto` 跟随系统亮暗（亮 = soyup，暗 = github-dark），mermaid 图表配色自动跟随；
+- 内置主题 7 套：`yup`（默认玫粉）、`github`、`notion`、`newsprint`（衬线正文）、`purple`、`github-dark`、`dracula`——后两套覆盖整套窗口配色（含 `--syntax-*` 语法高亮），亮色主题只覆盖排版变量；
+- 切换机制：`html[data-theme]` 属性 + localStorage 持久化（`settingsPersist.ts`），`auto` 跟随系统亮暗（亮 = yup，暗 = github-dark），mermaid 图表配色自动跟随；
 - 主题定义位置：`src/renderer/assets/base.css` 末尾的 `[data-theme='…']` 变量块（独立主题文件目录列为 v2）。
 
 ### 4.5 i18n
@@ -243,7 +243,7 @@ Typora 主题 = 一份用户 CSS。我们的兼容策略（v0.1 边界）：
 ## 6. 目录结构
 
 ```
-SoyupMark/
+YupMark/
 ├── package.json / electron-vite 配置
 ├── docs/                    # DESIGN / CONVENTIONS / PROGRESS / ROADMAP / theme-compat
 ├── release/                 # electron-builder 输出（不入库）

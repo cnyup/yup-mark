@@ -27,7 +27,7 @@
 - [x] 文件树工作区 / 多标签 / 大纲 / 最近文件 / 会话恢复
 - [x] KaTeX 数学公式、Mermaid 图表（懒加载）、Typora 网格表格（含行列工具栏与单元格编辑）、智能粘贴 URL
 - [x] 视图三件套：源码模式（行号+当前行高亮）/ 专注模式 / 打字机模式，状态栏模式徽章
-- [x] 主题系统：CSS 变量架构（Typora 变量子集兼容，见 docs/theme-compat.md），Soyup 玫粉 / GitHub 蓝 / Notion 墨黑 / Newsprint 报纸 / 静谧紫 / GitHub Dark / Dracula
+- [x] 主题系统：CSS 变量架构（Typora 变量子集兼容，见 docs/theme-compat.md），Yup 玫粉 / GitHub 蓝 / Notion 墨黑 / Newsprint 报纸 / 静谧紫 / GitHub Dark / Dracula
 - [x] 中英双语界面 + 原生菜单；快捷键对齐 Typora 官方（macOS / Windows 双套）
 
 完整设计见 [docs/DESIGN.md](docs/DESIGN.md)。开发者交接文档：

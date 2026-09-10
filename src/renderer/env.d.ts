@@ -1,9 +1,9 @@
 /// <reference types="vite/client" />
-import type { SoyupmarkApi } from '@shared/ipc'
+import type { YupmarkApi } from '@shared/ipc'
 
 declare global {
   interface Window {
-    soyupmark: SoyupmarkApi
+    yupmark: YupmarkApi
   }
 }
 

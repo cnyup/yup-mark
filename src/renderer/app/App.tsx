@@ -43,7 +43,7 @@ export function App() {
   useEffect(() => {
     mounted.current = true
 
-    const offMenu = window.soyupmark.onMenuAction(({ action }: MenuEvent) => {
+    const offMenu = window.yupmark.onMenuAction(({ action }: MenuEvent) => {
       const s = useWorkspaceStore.getState()
       if (typeof action === 'string') {
         switch (action) {
@@ -51,7 +51,7 @@ export function App() {
             s.newTab()
             break
           case 'file:open':
-            void window.soyupmark.openFileDialog().then((res) => {
+            void window.yupmark.openFileDialog().then((res) => {
               if (res.ok) useWorkspaceStore.getState().openDoc(res.data.path, res.data.content)
             })
             break
@@ -87,13 +87,13 @@ export function App() {
             break
         }
       } else if (action.action === 'file:open-path') {
-        void window.soyupmark.readFile(action.path).then((res) => {
+        void window.yupmark.readFile(action.path).then((res) => {
           if (res.ok) useWorkspaceStore.getState().openDoc(action.path, res.data)
         })
       }
     })
 
-    const offFs = window.soyupmark.onFsEvent((event) => {
+    const offFs = window.yupmark.onFsEvent((event) => {
       useWorkspaceStore.getState().handleFsEvent(event)
     })
 
@@ -132,7 +132,7 @@ export function App() {
   // 窗口标题跟随激活文档
   useEffect(() => {
     const name = tab?.path ? basename(tab.path) : t('file.untitled')
-    document.title = `${tab?.dirty ? '● ' : ''}${name} — SoyupMark`
+    document.title = `${tab?.dirty ? '● ' : ''}${name} — YupMark`
   }, [tab?.path, tab?.dirty, t])
 
   // Typora 视图键：面板切换（Win Ctrl+Shift+1/3，mac ⌃⌘1/⌃⌘3），侧栏收起时自动展开

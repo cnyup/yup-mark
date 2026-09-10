@@ -6,11 +6,11 @@ import { registerFileIpc } from './fileService'
 import { registerWorkspaceIpc } from './workspaceService'
 
 /**
- * 本地图片协议：渲染进程通过 soyup-file://md/<encodeURIComponent(绝对路径)>
+ * 本地图片协议：渲染进程通过 yup-file://md/<encodeURIComponent(绝对路径)>
  * 加载文档同目录的相对资源（http/file 页面直接引用对方 scheme 的资源会被拦截）。
  */
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'soyup-file', privileges: { standard: true, secure: true } },
+  { scheme: 'yup-file', privileges: { standard: true, secure: true } },
 ])
 
 function createWindow(): void {
@@ -19,7 +19,7 @@ function createWindow(): void {
     height: 700,
     minWidth: 640,
     minHeight: 400,
-    title: 'SoyupMark',
+    title: 'YupMark',
     show: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -46,7 +46,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  protocol.handle('soyup-file', (request) => {
+  protocol.handle('yup-file', (request) => {
     const path = decodeURIComponent(new URL(request.url).pathname.replace(/^\/+/, ''))
     return net.fetch(pathToFileURL(path).toString())
   })

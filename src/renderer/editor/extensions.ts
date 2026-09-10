@@ -1,5 +1,5 @@
 /**
- * @soyupmark/live-cm 的种子模块（M1 起承载块级实时渲染引擎）。
+ * @yupmark/live-cm 的种子模块（M1 起承载块级实时渲染引擎）。
  * 本目录约束：纯 TypeScript，零 React、零 Electron 依赖。
  */
 import { EditorState, type Extension } from '@codemirror/state'

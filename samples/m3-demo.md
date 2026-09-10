@@ -20,7 +20,7 @@ $$
 
 ```mermaid
 graph TD
-    A[打开 SoyupMark] --> B{光标在块内?}
+    A[打开 YupMark] --> B{光标在块内?}
     B -->|是| C[显示源码]
     B -->|否| D[渲染富文本]
     C --> D

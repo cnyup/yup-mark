@@ -1,7 +1,7 @@
 {
-  "name": "soyupmark",
-  "productName": "SoyupMark",
-  "version": "0.1.0",
+  "name": "yupmark",
+  "productName": "YupMark",
+  "version": "0.2.0",
   "description": "An open-source, Typora-like WYSIWYG Markdown editor built on CodeMirror 6",
   "license": "MIT",
   "private": true,
@@ -28,8 +28,8 @@
     "test": "vitest run"
   },
   "build": {
-    "appId": "com.soyupmark.app",
-    "productName": "SoyupMark",
+    "appId": "com.yupmark.app",
+    "productName": "YupMark",
     "directories": {
       "output": "release"
     },

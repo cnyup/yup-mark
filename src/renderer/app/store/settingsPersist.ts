@@ -2,7 +2,7 @@
 
 export type ThemeMode =
   | 'auto'
-  | 'soyup'
+  | 'yup'
   | 'github'
   | 'notion'
   | 'newsprint'
@@ -13,7 +13,7 @@ export type LocaleMode = 'auto' | 'zh-CN' | 'en-US'
 
 export const THEME_OPTIONS: ThemeMode[] = [
   'auto',
-  'soyup',
+  'yup',
   'github',
   'notion',
   'newsprint',
@@ -23,7 +23,7 @@ export const THEME_OPTIONS: ThemeMode[] = [
 ]
 export const LOCALE_OPTIONS: LocaleMode[] = ['auto', 'zh-CN', 'en-US']
 
-const STORAGE_KEY = 'soyupmark-settings'
+const STORAGE_KEY = 'yupmark-settings'
 
 export interface PersistedSettings {
   themeMode: ThemeMode
@@ -67,7 +67,7 @@ export function systemLocale(): string {
 }
 
 export function resolveTheme(mode: ThemeMode): string {
-  if (mode === 'auto') return systemPrefersDark() ? 'github-dark' : 'soyup'
+  if (mode === 'auto') return systemPrefersDark() ? 'github-dark' : 'yup'
   return mode
 }
 

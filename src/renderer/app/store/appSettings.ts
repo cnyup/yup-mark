@@ -1,6 +1,6 @@
 /**
  * 应用级设置：主题与语言（持久化在 localStorage，见 settingsPersist）。
- * 主题 auto 模式：亮 = soyup（默认），暗 = github-dark，跟随系统切换。
+ * 主题 auto 模式：亮 = yup（默认），暗 = github-dark，跟随系统切换。
  */
 import { create } from 'zustand'
 import i18next from 'i18next'
@@ -34,7 +34,7 @@ function applyAll(theme: string, locale: string): void {
     void i18next.changeLanguage(locale)
   }
   // 原生菜单语言（主进程侧重建）
-  void window.soyupmark?.setLanguage?.(locale === 'zh-CN' ? 'zh' : 'en')
+  void window.yupmark?.setLanguage?.(locale === 'zh-CN' ? 'zh' : 'en')
 }
 
 const initial = readPersisted()

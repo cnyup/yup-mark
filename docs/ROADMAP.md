@@ -1,4 +1,4 @@
-# SoyupMark 后续开发目标
+# YupMark 后续开发目标
 
 > 按 P0 → P1 → P2 优先级排列。**每项动工前先与用户确认方案**（协作铁律见 [CONVENTIONS.md §0](./CONVENTIONS.md)）。
 > 进度快照见 [PROGRESS.md](./PROGRESS.md)。

@@ -54,7 +54,7 @@ export function Sidebar() {
   // 打开操作菜单时拉取最近目录
   useEffect(() => {
     if (!opsOpen) return
-    void window.soyupmark.recentDirs().then((dirs) => setRecentDirs(dirs))
+    void window.yupmark.recentDirs().then((dirs) => setRecentDirs(dirs))
   }, [opsOpen])
 
   /** 新建的默认目录：当前文档所在目录，无则工作区根 */
@@ -66,7 +66,7 @@ export function Sidebar() {
   }
 
   async function openFile(path: string): Promise<void> {
-    const res = await window.soyupmark.readFile(path)
+    const res = await window.yupmark.readFile(path)
     if (res.ok) useWorkspaceStore.getState().openDoc(path, res.data)
   }
 
@@ -75,7 +75,7 @@ export function Sidebar() {
       title: t('tree.newFile'),
       onConfirm: async (name) => {
         if (!name.trim()) return
-        const res = await window.soyupmark.createFile(defaultDir(), name.trim())
+        const res = await window.yupmark.createFile(defaultDir(), name.trim())
         if (res.ok) {
           void useWorkspaceStore.getState().refreshTree()
           void openFile(res.data.path)
@@ -204,7 +204,7 @@ export function Sidebar() {
                     className="sidebar-popover__row"
                     onClick={() => {
                       setOpsOpen(false)
-                      if (root) void window.soyupmark.revealInFileManager(root)
+                      if (root) void window.yupmark.revealInFileManager(root)
                     }}
                   >
                     {t('sidebar.opReveal')}

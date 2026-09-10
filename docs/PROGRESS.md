@@ -1,4 +1,4 @@
-# SoyupMark 开发进度（截至 2026-09-10）
+# YupMark 开发进度（截至 2026-09-10）
 
 > 里程碑定义见 [DESIGN.md §7](./DESIGN.md)。规范见 [CONVENTIONS.md](./CONVENTIONS.md)，待办见 [ROADMAP.md](./ROADMAP.md)。
 
@@ -37,7 +37,7 @@
 - 会话持久化：标签、侧栏开合/面板/文件视图/排序、最近目录
 
 ### 主题与设置
-- 主题系统落地：`:root` 默认（soyup 玫粉）+ `html[data-theme]` 六套——GitHub 蓝 / Notion 墨黑 / Newsprint 报纸（衬线正文）/ 静谧紫 / GitHub Dark / Dracula（暗色整套）；设置面板即时切换 + localStorage 持久化 + auto 跟随系统
+- 主题系统落地：`:root` 默认（yup 玫粉）+ `html[data-theme]` 六套——GitHub 蓝 / Notion 墨黑 / Newsprint 报纸（衬线正文）/ 静谧紫 / GitHub Dark / Dracula（暗色整套）；设置面板即时切换 + localStorage 持久化 + auto 跟随系统
 - i18n 中英双语；原生菜单双语（主进程按语言重建）
 
 ### 主进程

@@ -31,7 +31,7 @@ function mockApi() {
 
 beforeEach(() => {
   cleanup()
-  window.soyupmark = mockApi() as unknown as typeof window.soyupmark
+  window.yupmark = mockApi() as unknown as typeof window.yupmark
 })
 
 describe('App 冒烟测试', () => {
@@ -44,8 +44,8 @@ describe('App 冒烟测试', () => {
 
   it('订阅原生菜单与文件系统事件', () => {
     render(<App />)
-    expect(window.soyupmark.onMenuAction).toHaveBeenCalled()
-    expect(window.soyupmark.onFsEvent).toHaveBeenCalled()
+    expect(window.yupmark.onMenuAction).toHaveBeenCalled()
+    expect(window.yupmark.onFsEvent).toHaveBeenCalled()
   })
 
   it('未命名文档显示占位标题', () => {

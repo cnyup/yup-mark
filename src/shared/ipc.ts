@@ -96,7 +96,7 @@ export const IPC = {
 } as const
 
 /** preload 通过 contextBridge 暴露给渲染进程的 API 面 */
-export interface SoyupmarkApi {
+export interface YupmarkApi {
   openFileDialog(): Promise<Result<OpenFileData>>
   saveFile(path: string, content: string): Promise<Result<null>>
   saveFileDialog(content: string): Promise<Result<OpenFileData>>

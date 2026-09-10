@@ -257,7 +257,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
       if (opts?.activate !== false) get().activateTab(tab.id)
       // 工作区外的文件也监听其目录，感知外部修改
       if (path && !path.startsWith(get().workspaceRoot ?? '\0')) {
-        void window.soyupmark.watchDir(dirname(path), false)
+        void window.yupmark.watchDir(dirname(path), false)
       }
       scheduleSessionPersist()
     },
@@ -299,7 +299,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
       if (tab.path && tab.dirty) await get().saveActiveNow()
       const idx = get().tabs.findIndex((t) => t.id === id)
       const remaining = get().tabs.filter((t) => t.id !== id)
-      if (tab.path) void window.soyupmark.unwatchDir(dirname(tab.path), false)
+      if (tab.path) void window.yupmark.unwatchDir(dirname(tab.path), false)
       if (remaining.length === 0) {
         const fresh = makeTab(null, '')
         set({ tabs: [fresh], activeId: fresh.id, conflict: null })
@@ -354,7 +354,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
       }
       set({ saving: true })
       const content = view ? view.state.doc.toString() : tab.content
-      const res = await window.soyupmark.saveFile(tab.path, content)
+      const res = await window.yupmark.saveFile(tab.path, content)
       if (res.ok) {
         patchTab(tab.id, { savedContent: content, content, dirty: false })
         flashSaved(tab.id)
@@ -372,7 +372,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
       if (!tab || get().saving) return
       const content = view ? view.state.doc.toString() : tab.content
       set({ saving: true })
-      const res = await window.soyupmark.saveFileDialog(content)
+      const res = await window.yupmark.saveFileDialog(content)
       if (res.ok) {
         patchTab(tab.id, {
           path: res.data.path,
@@ -382,7 +382,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
         })
         set({ saving: false })
         syncDocDir()
-        void window.soyupmark.watchDir(dirname(res.data.path), false)
+        void window.yupmark.watchDir(dirname(res.data.path), false)
         scheduleSessionPersist()
       } else if (res.error !== 'canceled') {
         set({ saving: false, saveError: res.error })
@@ -392,13 +392,13 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
     },
 
     openWorkspace: async () => {
-      const res = await window.soyupmark.openWorkspaceDialog()
+      const res = await window.yupmark.openWorkspaceDialog()
       if (res.ok && res.data) await get().restoreWorkspace(res.data)
     },
 
     restoreWorkspace: async (root) => {
       set({ workspaceRoot: root, expandedDirs: { [root]: true }, treeLoading: true })
-      await window.soyupmark.watchDir(root, true)
+      await window.yupmark.watchDir(root, true)
       await get().refreshTree()
       scheduleSessionPersist()
     },
@@ -406,7 +406,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
     refreshTree: async () => {
       const root = get().workspaceRoot
       if (!root) return
-      const res = await window.soyupmark.readTree(root)
+      const res = await window.yupmark.readTree(root)
       if (res.ok) set({ tree: res.data, treeLoading: false })
       else set({ treeLoading: false })
     },
@@ -447,7 +447,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
       if (!tab || !tab.path) return
 
       void (async () => {
-        const res = await window.soyupmark.readFile(tab.path as string)
+        const res = await window.yupmark.readFile(tab.path as string)
         if (!res.ok) return // 文件可能被删除：保留现状，下次保存会重建
         const disk = res.data
         const current = get().tabs.find((x) => x.id === tab.id)
@@ -496,7 +496,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
     },
 
     restoreSession: async () => {
-      const session = await window.soyupmark.loadSession()
+      const session = await window.yupmark.loadSession()
       if (!session) return
       if (session.sidebarOpen !== undefined) set({ sidebarOpen: session.sidebarOpen })
       if (session.sidebarPanel) set({ sidebarPanel: session.sidebarPanel })
@@ -506,7 +506,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
       const opened: string[] = []
       for (const t of session.tabs ?? []) {
         if (t.path) {
-          const res = await window.soyupmark.readFile(t.path)
+          const res = await window.yupmark.readFile(t.path)
           if (res.ok) {
             get().openDoc(t.path, res.data, { activate: false })
             opened.push(t.path)
@@ -535,7 +535,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
         tabs: tabs.map((t) => ({ path: t.path, content: t.dirty ? t.content : undefined })),
         activePath: activeTab?.path ?? null,
       }
-      void window.soyupmark.saveSession(state)
+      void window.yupmark.saveSession(state)
     },
   }
 })

@@ -50,4 +50,4 @@ const api = {
   },
 }
 
-contextBridge.exposeInMainWorld('soyupmark', api)
+contextBridge.exposeInMainWorld('yupmark', api)

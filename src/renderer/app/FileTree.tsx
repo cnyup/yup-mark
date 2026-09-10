@@ -48,7 +48,7 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
   const refresh = () => void useWorkspaceStore.getState().refreshTree()
 
   async function openFile(path: string): Promise<void> {
-    const res = await window.soyupmark.readFile(path)
+    const res = await window.yupmark.readFile(path)
     if (res.ok) useWorkspaceStore.getState().openDoc(path, res.data)
   }
 
@@ -68,7 +68,7 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
       initial: '',
       onConfirm: async (name) => {
         if (!name.trim()) return
-        const res = await window.soyupmark.createFile(dir, name.trim())
+        const res = await window.yupmark.createFile(dir, name.trim())
         if (res.ok) {
           refresh()
           void openFile(res.data.path)
@@ -83,7 +83,7 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
       initial: '',
       onConfirm: async (name) => {
         if (!name.trim()) return
-        const res = await window.soyupmark.createFolder(dir, name.trim())
+        const res = await window.yupmark.createFolder(dir, name.trim())
         if (res.ok) {
           useWorkspaceStore.getState().toggleDir(res.data.path)
           refresh()
@@ -98,7 +98,7 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
       initial: entry.name,
       onConfirm: async (name) => {
         if (!name.trim() || name === entry.name) return
-        const res = await window.soyupmark.renameEntry(entry.path, name.trim())
+        const res = await window.yupmark.renameEntry(entry.path, name.trim())
         if (res.ok) {
           // 打开中的 tab 路径跟随
           const store = useWorkspaceStore.getState()
@@ -116,7 +116,7 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
 
   async function doDelete(entry: FileEntry): Promise<void> {
     if (!window.confirm(t('tree.deleteConfirm', { name: entry.name }))) return
-    const res = await window.soyupmark.trashEntry(entry.path)
+    const res = await window.yupmark.trashEntry(entry.path)
     if (res.ok) {
       const tab = useWorkspaceStore.getState().tabs.find((x) => x.path === entry.path)
       if (tab) void useWorkspaceStore.getState().closeTab(tab.id)
@@ -139,7 +139,7 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
             type="button"
             className="file-tree__open-btn file-tree__open-btn--secondary"
             onClick={() =>
-              void window.soyupmark.openFileDialog().then((res) => {
+              void window.yupmark.openFileDialog().then((res) => {
                 if (res.ok) useWorkspaceStore.getState().openDoc(res.data.path, res.data.content)
               })
             }
@@ -218,7 +218,7 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
             ) : null}
             <button type="button" onClick={() => { closeMenu(); askRename(menu.entry) }}>{t('tree.rename')}</button>
             <button type="button" onClick={() => { closeMenu(); void doDelete(menu.entry) }}>{t('tree.delete')}</button>
-            <button type="button" onClick={() => { closeMenu(); void window.soyupmark.revealInFileManager(menu.entry.path) }}>
+            <button type="button" onClick={() => { closeMenu(); void window.yupmark.revealInFileManager(menu.entry.path) }}>
               {t('tree.reveal')}
             </button>
           </div>

@@ -11,7 +11,7 @@ import { useWorkspaceStore } from '@renderer/app/store/workspaceStore'
 describe('标签挂载后编辑事件链路', () => {
   beforeAll(() => {
     const ok = { ok: true, data: null }
-    ;(window as unknown as { soyupmark: unknown }).soyupmark = {
+    ;(window as unknown as { yupmark: unknown }).yupmark = {
       saveFile: async () => ok,
       saveSession: async () => ok,
       loadSession: async () => null,

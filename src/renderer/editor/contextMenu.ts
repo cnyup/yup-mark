@@ -52,12 +52,12 @@ function clipboardBridge(): ClipboardBridge {
     typeof window !== 'undefined'
       ? (
           window as {
-            soyupmark?: {
+            yupmark?: {
               readClipboardText?: () => Promise<{ ok: true; data: string } | { ok: false }>
               writeClipboardText?: (t: string) => Promise<{ ok: true } | { ok: false }>
             }
           }
-        ).soyupmark
+        ).yupmark
       : undefined
   return {
     read: async () => {

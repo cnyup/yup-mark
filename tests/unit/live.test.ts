@@ -268,12 +268,12 @@ describe('findGapAnchor 空闲锚点', () => {
 // 图片路径解析
 // ---------------------------------------------------------------------------
 describe('图片 src 解析', () => {
-  it('相对路径基于文档目录解析为 soyup-file 协议', () => {
+  it('相对路径基于文档目录解析为 yup-file 协议', () => {
     expect(resolveImgSrc('pic.png', '/Users/x/docs')).toBe(
-      `soyup-file://md/${encodeURIComponent('/Users/x/docs/pic.png')}`,
+      `yup-file://md/${encodeURIComponent('/Users/x/docs/pic.png')}`,
     )
     expect(resolveImgSrc('../img/a b.png', '/Users/x/docs/sub')).toBe(
-      `soyup-file://md/${encodeURIComponent('/Users/x/docs/img/a b.png')}`,
+      `yup-file://md/${encodeURIComponent('/Users/x/docs/img/a b.png')}`,
     )
   })
 

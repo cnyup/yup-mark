@@ -9,7 +9,7 @@ import {
 
 const THEME_LABELS: Record<ThemeMode, string> = {
   auto: 'settings.theme.auto',
-  soyup: 'Soyup 玫粉（默认）',
+  yup: 'Yup 玫粉（默认）',
   github: 'GitHub 蓝',
   notion: 'Notion 墨黑',
   newsprint: 'Newsprint 报纸',

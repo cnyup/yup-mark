@@ -1,4 +1,4 @@
-# SoyupMark 开发规范（交接必读）
+# YupMark 开发规范（交接必读）
 
 > 面向后续接手开发的 agent / 人类。项目全貌见 [DESIGN.md](./DESIGN.md)（ADR 与架构设计），
 > 当前进度见 [PROGRESS.md](./PROGRESS.md)，待办见 [ROADMAP.md](./ROADMAP.md)。
@@ -26,7 +26,7 @@ npm run dist:mac   # electron-builder 打包（M5 用）
 
 ```bash
 pkill -f "electron-vite dev"; pkill -f "MacOS/Electron"; sleep 1
-(ELECTRON_ENABLE_LOGGING=1 npm run dev > /tmp/soyup-dev-<tag>.log 2>&1 &)
+(ELECTRON_ENABLE_LOGGING=1 npm run dev > /tmp/yup-dev-<tag>.log 2>&1 &)
 sleep 12; pgrep -f "MacOS/Electron"   # 拿到 pid 即成功
 ```
 
@@ -39,7 +39,7 @@ sleep 12; pgrep -f "MacOS/Electron"   # 拿到 pid 即成功
 | `src/renderer/i18n/` | zh-CN / en-US 双语键（**两文件必须同步加**） | |
 | `src/main/` | 主进程：菜单加速键、文件系统、剪贴板、工作区 | |
 | `src/shared/` | 进程间契约：IPC 类型、路径/统计纯函数 | 引用 renderer 或 main 专属类型 |
-| `src/preload/` | contextBridge 暴露 `window.soyupmark` | |
+| `src/preload/` | contextBridge 暴露 `window.yupmark` | |
 
 ## 3. 编辑器内核核心模型（改动前必读）
 
@@ -83,7 +83,7 @@ rules.ts buildLiveDecorations(state, freezeRanges)  // 纯函数，可无头测�
 
 ### 3.5 主题系统
 
-`:root` 定义默认值（= soyup 玫粉主题）；`html[data-theme='xxx']` 块覆盖（base.css 末尾）。
+`:root` 定义默认值（= yup 玫粉主题）；`html[data-theme='xxx']` 块覆盖（base.css 末尾）。
 亮色主题只覆盖排版变量；`github-dark`/`dracula` 覆盖整套窗口变量（含 `--syntax-*`）。
 设置链路：`SettingsModal → appSettings(store) → document.documentElement.dataset.theme → CSS`，
 持久化在 localStorage（`settingsPersist.ts`，THEME_OPTIONS 数组即下拉顺序）。

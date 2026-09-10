@@ -1,12 +1,12 @@
-# SoyupMark 主题兼容说明（v0.1 · M4）
+# YupMark 主题兼容说明（v0.1 · M4）
 
 ## 我们的主题机制
 
 主题 = 一组 CSS 变量（可选附带少量额外规则，如 newsprint 的衬线字体）。切换方式：
 `<html data-theme="github-dark">`，全部内置主题随应用打包、零闪烁切换。
 
-内置主题 7 套：`soyup`（默认玫粉）、`github`、`notion`、`newsprint`（衬线正文）、`purple`、`github-dark`、`dracula`（后两套覆盖整套窗口配色，含语法高亮变量）；
-`auto` 模式跟随系统亮暗（亮 = soyup，暗 = github-dark）。
+内置主题 7 套：`yup`（默认玫粉）、`github`、`notion`、`newsprint`（衬线正文）、`purple`、`github-dark`、`dracula`（后两套覆盖整套窗口配色，含语法高亮变量）；
+`auto` 模式跟随系统亮暗（亮 = yup，暗 = github-dark）。
 
 ## 变量清单（主题必须/可选定义）
 
@@ -37,7 +37,7 @@
 ## 与 Typora 主题的兼容边界
 
 **兼容**：变量命名采用 Typora 主题的核心子集约定（上表"基础"组与 Typora 用户主题同名同义），
-Typora 主题中的变量值可以直接搬到 SoyupMark 主题文件使用。
+Typora 主题中的变量值可以直接搬到 YupMark 主题文件使用。
 
 **不兼容（明确不支持，v0.1 边界）**：
 
