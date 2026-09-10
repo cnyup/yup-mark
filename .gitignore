@@ -1,0 +1,17 @@
+node_modules/
+out/
+dist/
+coverage/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# 打包与构建产物（1.3G，npm run dist 可再生）
+release/
+*.tsbuildinfo
+
+# 布局测试 harness 的打包产物
+scripts/layout-harness/bundle.js
+scripts/layout-harness/bundle.css

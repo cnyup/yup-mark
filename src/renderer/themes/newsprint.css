@@ -1,0 +1,36 @@
+/* Newsprint：纸感米白 + 衬线正文（Typora newsprint 风格） */
+[data-theme='newsprint'] {
+  --bg-color: #f4f2ec;
+  --text-color: #2c2c2c;
+  --primary-color: #40597a;
+  --side-bar-bg-color: #ece9e0;
+  --meta-content-color: #8a857a;
+  --border-color: #dcd8cc;
+  --error-color: #a03123;
+
+  --heading-muted-color: #6b675c;
+  --quote-border-color: #c9c4b6;
+  --quote-bg-color: #efede5;
+  --quote-text-color: #55534a;
+  --code-bg-color: #efede5;
+  --inline-code-bg-color: #e7e4d9;
+  --hr-color: #c9c4b6;
+  --checkbox-border-color: #9a9484;
+  --checkbox-check-color: #f4f2ec;
+
+  --syntax-keyword: #8a3324;
+  --syntax-string: #4a5d23;
+  --syntax-number: #40597a;
+  --syntax-comment: #8a857a;
+  --syntax-variable: #7a5a2e;
+  --syntax-type: #2f5d50;
+  --syntax-function: #5a4a7a;
+  --syntax-tag: #2f5d50;
+  --syntax-attr: #40597a;
+  --syntax-mark: #a8a294;
+  --syntax-link: #40597a;
+}
+
+[data-theme='newsprint'] body {
+  font-family: Georgia, 'Times New Roman', 'Songti SC', 'SimSun', serif;
+}

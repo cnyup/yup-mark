@@ -1,0 +1,1689 @@
+/* SoyupMark 基础样式 —— CSS 变量命名对齐 Typora 主题约定（docs/DESIGN.md §4.4） */
+
+:root {
+  /* 基础色板（Typora 主题兼容变量子集，见 docs/theme-compat.md） */
+  --bg-color: #ffffff;
+  --text-color: #333333;
+  --primary-color: #428bca;
+  --side-bar-bg-color: #fafafa;
+  --meta-content-color: #999999;
+  --border-color: #e0e0e0;
+  --error-color: #d9534f;
+  --monospace: 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+
+  /* 排版辅助色（主题可覆盖：设置面板切换，见文件末尾 [data-theme] 段） */
+  --content-font:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  --heading-color: #d63384;
+  --link-color: #428bca;
+  --inline-code-text-color: var(--text-color);
+  --table-header-bg: color-mix(in srgb, var(--meta-content-color) 15%, var(--bg-color));
+  --checkbox-active-color: var(--primary-color);
+  --heading-muted-color: #6a737d;
+  --quote-border-color: #dfe2e5;
+  --quote-bg-color: #fafbfc;
+  --quote-text-color: var(--heading-muted-color);
+  --code-bg-color: #f6f8fa;
+  --inline-code-bg-color: #eff1f3;
+  --hr-color: #dfe2e5;
+  --checkbox-border-color: #c4c9ce;
+  --checkbox-check-color: #ffffff;
+
+  /* 源码态语法高亮 */
+  --syntax-keyword: #cf222e;
+  --syntax-string: #0a3069;
+  --syntax-number: #0550ae;
+  --syntax-comment: #6e7781;
+  --syntax-variable: #953800;
+  --syntax-type: #116329;
+  --syntax-function: #8250df;
+  --syntax-tag: #116329;
+  --syntax-attr: #0550ae;
+  --syntax-mark: #b0b0b0;
+  --syntax-link: #428bca;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  display: flex;
+  height: 100%;
+  position: relative;
+}
+
+.app__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app__editor {
+  flex: 1;
+  min-height: 0;
+  padding-left: 26px;
+  /* 滚动必须由 CM6 自己的 scroller 承担：外层滚动会让 CM6 的虚拟视口失真，
+     导致视口外内容高度按估算值永久错误，点击映射整体偏移 */
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+
+/* ===== 悬浮提示（data-tip）===== */
+[data-tip] {
+  position: relative;
+}
+
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: var(--text-color);
+  color: var(--bg-color);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.12s ease 0.35s;
+  pointer-events: none;
+  z-index: 90;
+}
+
+[data-tip]:hover::after {
+  opacity: 1;
+}
+
+[data-tip-pos='left']::after {
+  left: auto;
+  right: calc(100% + 8px);
+}
+
+[data-tip-pos='bottom']::after {
+  left: 50%;
+  right: auto;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+}
+
+/* ===== 侧边栏 ===== */
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  border-right: 1px solid var(--border-color);
+  background: var(--side-bar-bg-color);
+}
+
+/* 顶部：面板切换（左） + 面板标题（居中） + 文件搜索（右） */
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  min-height: 34px;
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+}
+
+.sidebar__title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  margin: 0 6px;
+  color: var(--text-color);
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar__icon-btn {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--meta-content-color);
+  cursor: pointer;
+}
+
+.sidebar__icon-btn:hover {
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  color: var(--text-color);
+}
+
+.sidebar__icon-btn--end {
+  margin-left: auto;
+}
+
+.sidebar__search {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.sidebar__search input {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 12px;
+  outline: none;
+}
+
+.sidebar__search input:focus {
+  border-color: var(--primary-color);
+}
+
+/* 底部功能栏（仅文件面板）：默认隐藏，光标移入侧栏浮现；悬浮覆盖在列表上方 */
+.sidebar__dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  border-top: 1px solid var(--border-color);
+  background: var(--side-bar-bg-color);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 30;
+}
+
+.sidebar:hover .sidebar__dock,
+.sidebar__dock--pinned {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sidebar__dock-ops {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar__dock-name {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--quote-text-color);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.sidebar__dock-name:hover {
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  color: var(--text-color);
+}
+
+.sidebar__dock-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 「操作」弹出菜单：操作组 + 排序 + 最近使用的目录 */
+.sidebar-popover {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  width: 220px;
+  max-width: 228px;
+  padding: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-color);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+  /* 必须高于 ctx-overlay 的 z-index:100（同层叠上下文内的兄弟节点），
+     否则透明遮罩盖住弹窗，所有点击被吞掉 */
+  z-index: 102;
+}
+
+.sidebar-popover__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px 4px;
+  color: var(--text-color);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sidebar-popover__close {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--meta-content-color);
+  cursor: pointer;
+}
+
+.sidebar-popover__close:hover {
+  color: var(--text-color);
+  border-color: var(--meta-content-color);
+}
+
+.sidebar-popover__row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-color);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar-popover__row:hover {
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+}
+
+.sidebar-popover__row--dir {
+  gap: 6px;
+  min-width: 0;
+}
+
+.sidebar-popover__dir-name {
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.sidebar-popover__dir-path {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--meta-content-color);
+  font-size: 10.5px;
+}
+
+.sidebar-popover__empty {
+  padding: 4px 8px 6px;
+  color: var(--meta-content-color);
+  font-size: 11px;
+}
+
+.sidebar-popover__sep {
+  height: 1px;
+  margin: 5px 6px;
+  background: var(--border-color);
+}
+
+.sidebar-popover__label {
+  padding: 4px 8px 4px;
+  color: var(--meta-content-color);
+  font-size: 11px;
+}
+
+/* 排序图标组（5 个模式） */
+.sidebar-popover__sorts {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px 4px;
+}
+
+.sidebar-popover__sort {
+  position: relative;
+  width: 30px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--meta-content-color);
+  cursor: pointer;
+}
+
+.sidebar-popover__sort:hover {
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  color: var(--text-color);
+}
+
+.sidebar-popover__sort--active {
+  background: color-mix(in srgb, var(--primary-color) 16%, transparent);
+  color: var(--primary-color);
+}
+
+.sidebar-popover__sort-check {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+}
+
+.sidebar-popover__sort[data-tip]::after {
+  left: 50%;
+  top: calc(100% + 6px);
+  transform: translateX(-50%);
+}
+
+.sidebar__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-top: 6px;
+}
+
+/* 文件树 */
+.file-tree {
+  font-size: 13px;
+  padding-bottom: 48px;
+}
+
+.file-tree__root {
+  padding: 4px 10px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.file-tree__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-color);
+  border-radius: 4px;
+  margin: 0 4px;
+}
+
+.file-tree__row:hover {
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+}
+
+.file-tree__row--active {
+  background: color-mix(in srgb, var(--primary-color) 18%, transparent);
+}
+
+.file-tree__chevron {
+  width: 12px;
+  flex-shrink: 0;
+  color: var(--meta-content-color);
+  transition: transform 0.12s ease;
+  text-align: center;
+}
+
+.file-tree__chevron--open {
+  transform: rotate(90deg);
+}
+
+.file-tree__chevron--leaf::before {
+  content: '';
+}
+
+.file-tree__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-tree__name--dir {
+  color: var(--quote-text-color);
+}
+
+/* 树视图行内图标（📁/📄） */
+.file-tree__row-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--meta-content-color);
+  margin-right: 5px;
+}
+
+.file-tree__row-icon--dir {
+  color: var(--primary-color);
+  opacity: 0.75;
+}
+
+/* 列表视图：分组小标题 */
+.file-tree__group {
+  padding: 8px 10px 2px;
+  color: var(--meta-content-color);
+  font-size: 11px;
+  font-weight: 600;
+  user-select: none;
+}
+
+/* 列表视图：双行卡片（主名加粗 + 扩展名灰 + 预览行） */
+.file-tree__card {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 10px;
+  margin: 1px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-color);
+}
+
+.file-tree__card:hover {
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+}
+
+.file-tree__card--active {
+  background: color-mix(in srgb, var(--primary-color) 18%, transparent);
+}
+
+.file-tree__card-title {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  min-width: 0;
+}
+
+.file-tree__card-stem {
+  font-weight: 600;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-tree__card-ext {
+  color: var(--meta-content-color);
+  font-size: 11.5px;
+  flex-shrink: 0;
+}
+
+.file-tree__card-preview {
+  color: var(--meta-content-color);
+  font-size: 11.5px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 列表视图行：相对目录提示（右对齐、弱化） */
+.file-tree__reldir {
+  margin-left: auto;
+  padding-left: 12px;
+  flex-shrink: 0;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--meta-content-color);
+  font-size: 11px;
+}
+
+.file-tree--empty {
+  display: flex;
+  justify-content: center;
+  padding-top: 32px;
+}
+
+.file-tree__empty-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-tree__open-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.file-tree__open-btn--secondary {
+  color: var(--meta-content-color);
+}
+
+.file-tree__hint {
+  padding: 6px 10px;
+  color: var(--meta-content-color);
+  font-size: 12px;
+}
+
+/* 大纲 */
+.outline-panel {
+  font-size: 13px;
+  padding-bottom: 40px;
+}
+
+.outline-panel--empty {
+  padding: 16px 10px;
+  color: var(--meta-content-color);
+}
+
+.outline-panel__item {
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-color);
+  border-radius: 4px;
+  margin: 0 4px;
+}
+
+.outline-panel__item:hover {
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+}
+
+.outline-panel__item--active {
+  background: color-mix(in srgb, var(--primary-color) 18%, transparent);
+  font-weight: 600;
+}
+
+/* ===== 标签栏 ===== */
+.tab-bar {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  background: var(--side-bar-bg-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 6px 8px 0;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.tab-bar__tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 12px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  font-size: 12.5px;
+  cursor: pointer;
+  color: var(--meta-content-color);
+  background: transparent;
+  max-width: 180px;
+  user-select: none;
+}
+
+.tab-bar__tab--active {
+  background: var(--bg-color);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+.tab-bar__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-bar__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.tab-bar__dot--dirty {
+  background: var(--primary-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 25%, transparent);
+}
+
+/* 未保存时文件名同步微调色，双通道反馈 */
+.tab-bar__tab--dirty .tab-bar__name {
+  color: var(--primary-color);
+}
+
+/* 保存完成反馈：绿色 ✓ 出现后淡出 */
+.tab-bar__tick {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-color);
+  animation: tab-tick-fade 1.8s ease forwards;
+}
+
+@keyframes tab-tick-fade {
+  0%, 60% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.tab-bar__close {
+  border: none;
+  background: transparent;
+  color: var(--meta-content-color);
+  font-size: 14px;
+  line-height: 1;
+  padding: 1px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tab-bar__close:hover {
+  background: color-mix(in srgb, var(--text-color) 12%, transparent);
+  color: var(--text-color);
+}
+
+/* ===== 右键菜单 ===== */
+.ctx-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+.ctx-menu {
+  position: fixed;
+  z-index: 101;
+  min-width: 148px;
+  padding: 3px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.12);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 菜单项：图标 + 文字 + 快捷键（通栏宽度，快捷键靠右） */
+.ctx-menu button {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 3px 8px;
+  font-size: 12.5px;
+  line-height: 1.25;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+/* 图标必须显式限尺寸：SVG 无宽高属性时会按默认 300x150 撑爆菜单 */
+.ctx-menu__icon {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--meta-content-color);
+}
+
+.ctx-menu__icon svg {
+  width: 13px;
+  height: 13px;
+  display: block;
+}
+
+.ctx-menu button:hover:not(:disabled) .ctx-menu__icon {
+  color: var(--text-color);
+}
+
+.ctx-menu__hint {
+  margin-left: auto;
+  color: var(--meta-content-color);
+  font-size: 11px;
+}
+
+.ctx-menu button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+}
+
+.ctx-menu button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ctx-menu__sep {
+  height: 1px;
+  margin: 3px 7px;
+  background: var(--border-color);
+}
+
+/* 子菜单（段落/格式/插入）：悬停展开 */
+.ctx-sub {
+  position: relative;
+}
+
+.ctx-sub > button::after {
+  content: '▸';
+  margin-left: auto;
+  color: var(--meta-content-color);
+  font-size: 10px;
+}
+
+.ctx-sub__panel {
+  display: none;
+  position: absolute;
+  left: calc(100% - 6px);
+  top: -4px;
+  min-width: 128px;
+  padding: 3px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
+  z-index: 2;
+}
+
+.ctx-sub:hover .ctx-sub__panel {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 该项靠近视口底部：面板改向上锚定 */
+.ctx-sub--up .ctx-sub__panel {
+  top: auto;
+  bottom: -5px;
+}
+
+.ctx-sub__panel button {
+  min-width: 128px;
+}
+
+/* 菜单靠右时子菜单向左展开 */
+.ctx-menu--flip-sub .ctx-sub__panel {
+  left: auto;
+  right: calc(100% - 2px);
+}
+
+.ctx-menu--flip-sub .ctx-sub > button::after {
+  content: '◂';
+}
+
+/* 插入表格弹窗字段 */
+.ctx-dialog__field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--text-color);
+}
+
+.ctx-dialog__field input {
+  width: 88px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+}
+
+.ctx-dialog__field input:focus {
+  border-color: var(--primary-color);
+}
+
+/* ===== 模态 ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.modal {
+  width: 380px;
+  max-width: calc(100vw - 48px);
+  background: var(--bg-color);
+  border-radius: 10px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
+  padding: 18px;
+}
+
+.modal__title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  word-break: break-all;
+}
+
+.modal__text {
+  font-size: 13px;
+  color: var(--quote-text-color);
+  margin: 0 0 14px;
+  line-height: 1.6;
+}
+
+.modal__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  outline: none;
+}
+
+.modal__input:focus {
+  border-color: var(--primary-color);
+}
+
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal__actions--column {
+  flex-direction: column;
+  justify-content: stretch;
+}
+
+.modal__btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.modal__btn--primary {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
+}
+
+.modal__btn--plain {
+  border: none;
+  color: var(--meta-content-color);
+}
+
+.editor-host {
+  height: 100%;
+  width: 100%;
+  max-width: 1004px; /* 914 内容宽 + 两侧 45px */
+  overflow: hidden;
+  padding: 30px 0 0;
+}
+
+.editor-host .cm-editor {
+  height: 100%;
+}
+
+.editor-host .cm-scroller {
+  overflow: auto;
+}
+
+/* CodeMirror 容器基础排版（ Typora 风格：无边框、无行号） */
+.editor-host .cm-editor {
+  background: transparent;
+  color: var(--text-color);
+  font-size: 17px;
+  line-height: 1.75;
+}
+
+.editor-host .cm-editor.cm-focused {
+  outline: none;
+}
+
+.editor-host .cm-scroller {
+  font-family: inherit;
+}
+
+.editor-host .cm-content {
+  caret-color: var(--primary-color);
+  padding-bottom: 24px;
+}
+
+.editor-host .cm-line {
+  padding: 0 2px;
+}
+
+/* CM6 默认高亮给 heading 内容加了下划线（defaultHighlightStyle），按 Typora 风格去掉 */
+.editor-host .cm-h-line,
+.editor-host .cm-h-line span {
+  text-decoration: none;
+}
+
+/* 状态栏 */
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 12px;
+  border-top: 1px solid var(--border-color);
+  background: var(--side-bar-bg-color);
+  color: var(--meta-content-color);
+  font-size: 12px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.status-bar__toggle {
+  width: 24px;
+  height: 24px;
+  margin-left: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--meta-content-color);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.status-bar__toggle:hover {
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  color: var(--text-color);
+}
+
+/* 视图模式徽章（源码/专注/打字机）：点击整枚（含 ×）退出对应模式 */
+.status-bar__mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 8px;
+  padding: 1px 9px;
+  font-size: 11px;
+  line-height: 1.7;
+  flex-shrink: 0;
+  color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary-color) 32%, transparent);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.status-bar__mode:hover {
+  background: color-mix(in srgb, var(--primary-color) 20%, transparent);
+}
+
+.status-bar__mode-x {
+  font-size: 12.5px;
+  line-height: 1;
+  opacity: 0.75;
+}
+
+/* 源码模式：行号槽 + 当前行高亮（Typora 源码视图样式） */
+.editor-host .cm-gutters {
+  background: transparent;
+  border: none;
+  color: var(--meta-content-color);
+  font-family: var(--monospace);
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.editor-host .cm-activeLine {
+  background: color-mix(in srgb, var(--text-color) 4%, transparent);
+}
+
+.status-bar__file {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-bar__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+.status-bar__dot--dirty {
+  background: var(--primary-color);
+}
+
+.status-bar__state {
+  flex-shrink: 0;
+}
+
+.status-bar__state--error {
+  color: var(--error-color);
+}
+
+.status-bar__stats {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ===== M1 块级实时渲染：渲染态样式 ===== */
+/* 语法符号隐藏用 Decoration.replace 实现（文本不在 DOM），无需 CSS 类 */
+
+/* 标题：github 主题式层级（h1/h2 带底线），块样式始终生效（Typora 同款，活跃编辑时 `#` 可见但仍保持字号）
+   注意：行装饰禁止垂直 margin（CM6 的坐标测量不含 margin，会导致点击错位），一律用 padding */
+.editor-host .cm-h-line.cm-h1 {
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1.3;
+  padding: 0.55em 0 0.3em;
+  border-bottom: 1px solid var(--border-color);
+}
+.editor-host .cm-h-line.cm-h2 {
+  font-size: 1.5em;
+  font-weight: 700;
+  line-height: 1.35;
+  padding: 0.75em 0 0.25em;
+  border-bottom: 1px solid var(--border-color);
+}
+.editor-host .cm-h-line.cm-h3 {
+  font-size: 1.25em;
+  font-weight: 700;
+  line-height: 1.4;
+  padding: 0.8em 0 0.25em;
+}
+.editor-host .cm-h-line.cm-h4 {
+  font-size: 1.06em;
+  font-weight: 700;
+  padding: 0.8em 0 0.2em;
+}
+.editor-host .cm-h-line.cm-h5,
+.editor-host .cm-h-line.cm-h6 {
+  font-size: 0.94em;
+  font-weight: 700;
+  padding: 0.8em 0 0.2em;
+  color: var(--heading-muted-color);
+}
+
+/* 标题主题色（Typora 式：实时/源码两模式统一，源码模式下 # 标记随行同色） */
+.editor-host .cm-h-line.cm-h1,
+.editor-host .cm-h-line.cm-h2,
+.editor-host .cm-h-line.cm-h3,
+.editor-host .cm-h-line.cm-h4 {
+  color: var(--heading-color);
+}
+
+/* 引用块：github 式浅灰底 + 灰蓝竖线 + 弱化文字 */
+.editor-host .cm-quote-line {
+  border-left: 4px solid var(--quote-border-color);
+  padding-left: 14px;
+  color: var(--quote-text-color);
+  background: var(--quote-bg-color);
+  font-style: normal;
+}
+
+/* 列表行距呼吸感（用 padding，不用 margin，原因见标题注释） */
+.editor-host .cm-list-line {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+/* 代码块：等宽字体 + 浅底色（逐行） */
+.editor-host .cm-code-line {
+  font-family: var(--monospace);
+  font-size: 0.9em;
+  background: var(--code-bg-color);
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+/* 行内元素 */
+.editor-host .cm-strong {
+  font-weight: 700;
+}
+.editor-host .cm-em {
+  font-style: italic;
+}
+.editor-host .cm-strike {
+  text-decoration: line-through;
+  color: var(--meta-content-color);
+}
+.editor-host .cm-inline-code {
+  font-family: var(--monospace);
+  font-size: 0.86em;
+  background: var(--inline-code-bg-color);
+  border-radius: 4px;
+  padding: 0.15em 0.35em;
+  color: var(--inline-code-text-color);
+}
+.editor-host .cm-link-text {
+  color: var(--link-color);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* 图片 */
+.editor-host .cm-image-wrap {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: bottom;
+}
+.editor-host .cm-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+/* 水平线（垂直间距用 padding：margin 不计入 CM6 高度测量，会让点击映射偏移） */
+.editor-host .cm-hr-widget {
+  border: none;
+  border-top: 2px solid var(--hr-color);
+  padding: 1.2em 0 0.8em;
+  width: 100%;
+}
+
+/* 任务列表复选框（圆形待办风：Things/Bear 式圆框，选中蓝圆白勾） */
+.editor-host .cm-checkbox {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  border: 1.5px solid var(--checkbox-border-color);
+  border-radius: 50%;
+  vertical-align: -3px;
+  margin-right: 6px;
+  position: relative;
+  user-select: none;
+  transition: background 0.14s ease, border-color 0.14s ease, transform 0.14s ease;
+}
+.editor-host .cm-checkbox:hover {
+  border-color: var(--primary-color);
+}
+.editor-host .cm-checkbox:active {
+  transform: scale(0.92);
+}
+.editor-host .cm-checkbox--checked {
+  background: var(--checkbox-active-color);
+  border-color: var(--checkbox-active-color);
+}
+.editor-host .cm-checkbox--checked::after {
+  content: '';
+  position: absolute;
+  left: 4.5px;
+  top: 1.5px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--checkbox-check-color);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* 活跃态淡显的语法标记（Typora 式：渲染文字 + 淡出标记） */
+.editor-host .cm-mark-dim {
+  color: var(--meta-content-color);
+}
+
+/* 专注模式：非当前块淡化（F8 切换） */
+.editor-host .cm-focus-dim {
+  opacity: 0.25;
+  transition: opacity 0.25s ease;
+}
+
+/* 无序列表符号 */
+.editor-host .cm-bullet {
+  color: var(--primary-color);
+  font-weight: 700;
+  margin-right: 5px;
+}
+
+/* ===== M3 扩展语法 ===== */
+
+/* 数学公式（KaTeX；块级独立成块并居中） */
+.editor-host .cm-math-block {
+  display: block;
+  text-align: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.8em 0;
+}
+
+.editor-host .cm-math-error {
+  color: var(--error-color);
+}
+
+/* Mermaid 图表 */
+.editor-host .cm-mermaid-wrap {
+  text-align: center;
+  padding: 0.8em 0;
+  overflow-x: auto;
+}
+
+.editor-host .cm-mermaid-wrap svg {
+  max-width: 100%;
+}
+
+.editor-host .cm-mermaid-wrap--error {
+  color: var(--error-color);
+  font-family: var(--monospace);
+  font-size: 0.85em;
+  text-align: left;
+  white-space: pre-wrap;
+  border: 1px dashed var(--error-color);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+/* 渲染态表格：Typora 经典网格（全边框 + 灰底表头 + 斑马纹） */
+.editor-host .cm-table-wrap {
+  padding: 0.6em 0;
+  position: relative;
+}
+
+/* 横向滚动由内层承担（外层要放悬浮工具栏，overflow 会把它裁掉） */
+.editor-host .cm-table-scroll {
+  overflow-x: auto;
+}
+
+/* 表格上方悬浮工具栏：悬停或单元格编辑时出现 */
+.editor-host .cm-table-toolbar {
+  position: absolute;
+  bottom: calc(100% - 2px);
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 2px 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.14);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  z-index: 40;
+}
+
+.editor-host .cm-table-wrap:hover .cm-table-toolbar,
+.editor-host .cm-table-wrap:focus-within .cm-table-toolbar,
+.editor-host .cm-table-toolbar:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.editor-host .cm-table-toolbar__btn {
+  width: 26px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--meta-content-color);
+  cursor: pointer;
+}
+
+.editor-host .cm-table-toolbar__btn:hover {
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  color: var(--text-color);
+}
+
+.editor-host .cm-table-toolbar__btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.editor-host .cm-table-toolbar--inside {
+  bottom: auto;
+  top: 2px;
+}
+
+.editor-host .cm-table-toolbar__sep {
+  width: 1px;
+  height: 16px;
+  margin: 0 3px;
+  background: var(--border-color);
+}
+
+.editor-host .cm-table {
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+
+.editor-host .cm-table th,
+.editor-host .cm-table td {
+  border: 1px solid var(--border-color);
+  padding: 7px 13px;
+  min-width: 3em;
+  line-height: 1.6;
+}
+
+.editor-host .cm-table th {
+  background: var(--table-header-bg);
+  color: var(--text-color);
+  font-weight: 700;
+}
+
+.editor-host .cm-table tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--meta-content-color) 7%, var(--bg-color));
+}
+
+
+/* 代码块语言角标（闭合围栏行尾） */
+.editor-host .cm-code-lang {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 0 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-family: var(--monospace);
+  font-size: 0.72em;
+  color: var(--meta-content-color);
+  cursor: pointer;
+  user-select: none;
+  vertical-align: 1px;
+}
+
+.editor-host .cm-code-lang:hover {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+/* 下方角标 = 语言选择器：主色弱化描边，与上方源码编辑角标区分 */
+.editor-host .cm-code-lang--pick {
+  color: var(--primary-color);
+  border-color: color-mix(in srgb, var(--primary-color) 45%, transparent);
+}
+
+/* 语言选择弹窗（挂 body，fixed 定位逃开 .cm-scroller 裁剪） */
+.cm-code-lang-popup {
+  position: fixed;
+  z-index: 400;
+  padding: 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-color);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cm-code-lang-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 12px;
+  outline: none;
+}
+
+.cm-code-lang-input:focus {
+  border-color: var(--primary-color);
+}
+
+.cm-code-lang-list {
+  max-height: 236px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cm-code-lang-item {
+  text-align: left;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-color);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cm-code-lang-item:hover {
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+}
+
+.cm-code-lang-item--active {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.cm-code-lang-hint {
+  padding: 4px 8px;
+  color: var(--meta-content-color);
+  font-size: 11px;
+}
+
+.cm-code-lang-clear {
+  padding: 5px 8px;
+  border: none;
+  border-top: 1px solid var(--border-color);
+  border-radius: 0 0 6px 6px;
+  background: transparent;
+  color: var(--meta-content-color);
+  font-size: 11.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cm-code-lang-clear:hover {
+  color: var(--error-color);
+}
+
+/* 表格单元格编辑态 */
+.editor-host .cm-table th,
+.editor-host .cm-table td {
+  min-width: 3em;
+}
+
+.editor-host .cm-table [contenteditable] {
+  cursor: text;
+  outline: none;
+}
+
+.editor-host .cm-table [contenteditable]:focus {
+  box-shadow: inset 0 0 0 2px var(--primary-color);
+  border-radius: 2px;
+}
+
+/* ===== 设置弹窗 ===== */
+.settings__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  color: var(--text-color);
+}
+
+.settings__select {
+  min-width: 200px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 13px;
+  outline: none;
+}
+
+.settings__select:focus {
+  border-color: var(--primary-color);
+}
+
+/* ==========================================================================
+   主题（html[data-theme]，设置面板切换；soyup 为默认 = :root 值）
+   亮色主题只覆盖排版配色（标题/链接/引用/代码/表格/勾选）；github-dark / dracula 覆盖整套窗口配色
+   ========================================================================== */
+
+/* 正文内容字体（主题可换衬线等；应用框架与弹出层保持系统无衬线） */
+.editor-host .cm-content {
+  font-family: var(--content-font);
+}
+
+/* A · GitHub 蓝：经典开源文档风 */
+[data-theme='github'] {
+  --heading-color: #0969da;
+  --link-color: #0969da;
+  --inline-code-bg-color: rgba(175, 184, 193, 0.22);
+  --inline-code-text-color: #24292f;
+  --quote-border-color: #d0d7de;
+  --quote-bg-color: #ffffff;
+  --quote-text-color: #656d76;
+  --code-bg-color: #f6f8fa;
+  --table-header-bg: #f6f8fa;
+  --hr-color: #d8dee4;
+  --checkbox-border-color: #b8bec4;
+  --checkbox-active-color: #0969da;
+}
+
+/* C · Notion 墨黑：极简黑白灰，红色行内代码点缀 */
+[data-theme='notion'] {
+  --heading-color: #000000;
+  --link-color: #37352f;
+  --inline-code-bg-color: #f7f6f3;
+  --inline-code-text-color: #eb5757;
+  --quote-border-color: #cfcccb;
+  --quote-bg-color: transparent;
+  --quote-text-color: #37352f;
+  --code-bg-color: #f7f6f3;
+  --table-header-bg: #f7f6f3;
+  --hr-color: #e9e9e7;
+  --checkbox-border-color: #c4c1bb;
+  --checkbox-active-color: #37352f;
+}
+
+/* B · Newsprint 报纸：Typora 官方经典，衬线正文 + 砖红标题 + 纸感 */
+[data-theme='newsprint'] {
+  --content-font: Georgia, 'Songti SC', 'Noto Serif SC', 'Times New Roman', serif;
+  --heading-color: #d14;
+  --link-color: #d14;
+  --inline-code-bg-color: #f0ebe0;
+  --inline-code-text-color: #7c4b4b;
+  --quote-border-color: #ddd6c8;
+  --quote-bg-color: transparent;
+  --quote-text-color: #5d5d5d;
+  --code-bg-color: #f7f3ea;
+  --table-header-bg: #f7f3ea;
+  --hr-color: #e4ddd2;
+  --checkbox-border-color: #cfc6b4;
+  --checkbox-active-color: #d14;
+}
+
+/* D · 静谧紫：现代柔和，标题/代码同色系 */
+[data-theme='purple'] {
+  --heading-color: #8250df;
+  --link-color: #6639ba;
+  --inline-code-bg-color: #f6f0ff;
+  --inline-code-text-color: #6f42c1;
+  --quote-border-color: #e6dcff;
+  --quote-bg-color: #faf7ff;
+  --quote-text-color: #6e7781;
+  --code-bg-color: #f9f5ff;
+  --table-header-bg: #f6f0ff;
+  --hr-color: #e6dcff;
+  --checkbox-border-color: #d4c2f5;
+  --checkbox-active-color: #8250df;
+}
+
+/* GitHub Dark：整窗暗色（auto 模式随系统） */
+[data-theme='github-dark'] {
+  --bg-color: #0d1117;
+  --text-color: #e6edf3;
+  --side-bar-bg-color: #161b22;
+  --meta-content-color: #8b949e;
+  --border-color: #30363d;
+  --primary-color: #58a6ff;
+  --heading-color: #58a6ff;
+  --heading-muted-color: #8b949e;
+  --link-color: #58a6ff;
+  --quote-border-color: #3d444d;
+  --quote-bg-color: #161b22;
+  --quote-text-color: #8b949e;
+  --code-bg-color: #161b22;
+  --inline-code-bg-color: rgba(110, 118, 129, 0.4);
+  --inline-code-text-color: #e6edf3;
+  --table-header-bg: #21262d;
+  --hr-color: #30363d;
+  --checkbox-border-color: #8b949e;
+  --checkbox-active-color: #58a6ff;
+  --syntax-keyword: #ff7b72;
+  --syntax-string: #a5d6ff;
+  --syntax-number: #79c0ff;
+  --syntax-comment: #8b949e;
+  --syntax-variable: #ffa657;
+}
+
+/* Dracula：整窗暗色，紫粉青经典配色 */
+[data-theme='dracula'] {
+  --bg-color: #282a36;
+  --text-color: #f8f8f2;
+  --side-bar-bg-color: #21222c;
+  --meta-content-color: #6272a4;
+  --border-color: #44475a;
+  --primary-color: #bd93f9;
+  --heading-color: #ff79c6;
+  --heading-muted-color: #90a1ca;
+  --link-color: #8be9fd;
+  --quote-border-color: #44475a;
+  --quote-bg-color: #21222c;
+  --quote-text-color: #90a1ca;
+  --code-bg-color: #21222c;
+  --inline-code-bg-color: #3a3d4d;
+  --inline-code-text-color: #ff79c6;
+  --table-header-bg: #343746;
+  --hr-color: #44475a;
+  --checkbox-border-color: #6272a4;
+  --checkbox-active-color: #bd93f9;
+  --syntax-keyword: #ff79c6;
+  --syntax-string: #f1fa8c;
+  --syntax-number: #bd93f9;
+  --syntax-comment: #6272a4;
+  --syntax-variable: #50fa7b;
+}

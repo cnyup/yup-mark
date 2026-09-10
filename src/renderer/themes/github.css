@@ -1,0 +1,32 @@
+/* GitHub Light */
+[data-theme='github'] {
+  --bg-color: #ffffff;
+  --text-color: #1f2328;
+  --primary-color: #0969da;
+  --side-bar-bg-color: #f6f8fa;
+  --meta-content-color: #656d76;
+  --border-color: #d0d7de;
+  --error-color: #cf222e;
+
+  --heading-muted-color: #656d76;
+  --quote-border-color: #d1d9e0;
+  --quote-bg-color: #f6f8fa;
+  --quote-text-color: #59636e;
+  --code-bg-color: #f6f8fa;
+  --inline-code-bg-color: #eff1f3;
+  --hr-color: #d1d9e0;
+  --checkbox-border-color: #8c959f;
+  --checkbox-check-color: #ffffff;
+
+  --syntax-keyword: #cf222e;
+  --syntax-string: #0a3069;
+  --syntax-number: #0550ae;
+  --syntax-comment: #6e7781;
+  --syntax-variable: #953800;
+  --syntax-type: #116329;
+  --syntax-function: #8250df;
+  --syntax-tag: #116329;
+  --syntax-attr: #0550ae;
+  --syntax-mark: #8c959f;
+  --syntax-link: #0969da;
+}
