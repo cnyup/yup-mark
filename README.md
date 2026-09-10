@@ -1,4 +1,4 @@
-# SoyupMark
+# YupMark
 
 [![CI](https://github.com/cnyup/yup-mark/actions/workflows/ci.yml/badge.svg)](https://github.com/cnyup/yup-mark/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/cnyup/yup-mark?display_name=tag&sort=semver)](https://github.com/cnyup/yup-mark/releases)
