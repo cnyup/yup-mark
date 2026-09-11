@@ -43,6 +43,7 @@ import {
   mermaidInfo,
 } from './grid'
 import { tableAt, cellAt, parsedForRender } from './table-mode'
+import { sourceModeField } from '@yupmark/live-cm/viewModes'
 
 /** 带 doc 偏移与样式的单元格 */
 export interface StyledCell extends Cell {
@@ -56,6 +57,15 @@ export type { RenderSegment }
 export interface LayoutRow {
   segments: RenderSegment[]
   width: number
+  /** 源码模式行号（仅每文档行的首个视觉行携带） */
+  lineNo?: number
+}
+
+/** 搜索命中高亮（current=当前命中，反色；其余下划线） */
+export interface SearchHighlight {
+  from: number
+  to: number
+  current: boolean
 }
 
 export interface ViewportLayout {
@@ -287,6 +297,8 @@ export interface LayoutOptions {
   height: number
   firstLine: number
   cursorPos: number
+  /** 搜索命中高亮（叠加到字符样式） */
+  highlights?: SearchHighlight[]
 }
 
 // 同一 state + 同参的装配结果缓存：applyScroll（事件期）与渲染（同帧）共用，每键只算一次
@@ -296,7 +308,11 @@ let memoVal: ViewportLayout | null = null
 
 /** 装配视口（不含滚动决策——由 viewport.ts 预先修正 firstLine） */
 export function layoutViewport(state: EditorState, opts: LayoutOptions): ViewportLayout {
-  const key = `${opts.width}|${opts.height}|${opts.firstLine}|${opts.cursorPos}`
+  const hlKey =
+    opts.highlights === undefined || opts.highlights.length === 0
+      ? ''
+      : `h${opts.highlights.length}:${opts.highlights[0]?.from}-${opts.highlights[opts.highlights.length - 1]?.to}:${opts.highlights.filter((h) => h.current).length}`
+  const key = `${opts.width}|${opts.height}|${opts.firstLine}|${opts.cursorPos}|${hlKey}`
   if (state === memoState && key === memoKey && memoVal !== null) return memoVal
   const result = computeViewport(state, opts)
   memoState = state
@@ -306,8 +322,13 @@ export function layoutViewport(state: EditorState, opts: LayoutOptions): Viewpor
 }
 
 function computeViewport(state: EditorState, opts: LayoutOptions): ViewportLayout {
-  const { width, height, firstLine, cursorPos } = opts
+  const { width, height, firstLine, cursorPos, highlights } = opts
   const doc = state.doc
+  // 源码模式（Alt+/）：行号槽占用内容宽度
+  const sourceMode = state.field(sourceModeField, false) ?? false
+  const gutter = sourceMode ? `${doc.lines}`.length + 1 : 0
+  const contentWidth = Math.max(8, width - gutter)
+  const hl = highlights ?? []
 
   const cursorLine = doc.lineAt(cursorPos)
   // 光标行强制纳入（滚动兜底后正常不会触发）
@@ -343,7 +364,7 @@ function computeViewport(state: EditorState, opts: LayoutOptions): ViewportLayou
       if (!activeTableEmitted && activeParsed !== null) {
         activeTableEmitted = true
         const grid = renderTableGrid(activeParsed, {
-          width,
+          width: contentWidth,
           cursor:
             activeCursor !== null
               ? { row: activeCursor.row, col: activeCursor.col, offset: activeCursor.offset }
@@ -354,7 +375,7 @@ function computeViewport(state: EditorState, opts: LayoutOptions): ViewportLayou
           rows.push({ segments: segs, width: segs.reduce((acc, s) => acc + charWidth(s.text), 0) })
         }
         if (grid.caret !== null) {
-          cursor = { x: grid.caret.x, y: blockStart + grid.caret.y }
+          cursor = { x: gutter + grid.caret.x, y: blockStart + grid.caret.y }
           cursorRowWidth = 0
         }
       }
@@ -362,33 +383,50 @@ function computeViewport(state: EditorState, opts: LayoutOptions): ViewportLayou
       continue
     }
 
-    const content = buildLineContent(state, line.from, line.to, line.text, idx, codeTokens, width, blockCache)
+    const content = buildLineContent(state, line.from, line.to, line.text, idx, codeTokens, contentWidth, blockCache)
 
     if (content.kind === 'absorbed') continue
 
     if (content.kind === 'block') {
+      let first = true
       for (const segs of content.rows) {
         const w = segs.reduce((acc, s) => acc + charWidth(s.text), 0)
-        rows.push({ segments: segs, width: w })
+        rows.push({ segments: segs, width: w, lineNo: first && sourceMode ? ln : undefined })
+        first = false
       }
       continue
     }
 
     const cells = content.cells
+    // 搜索命中高亮叠加（当前命中反色，其余下划线）
+    for (let i = 0; i < cells.length; i++) {
+      const c = cells[i]
+      if (c === undefined || c.docPos < 0) continue
+      const hit = hl.find((h) => c.docPos >= h.from && c.docPos < h.to)
+      if (hit !== undefined) {
+        cells[i] = {
+          ...c,
+          style: hit.current
+            ? { ...c.style, inverse: true }
+            : { ...c.style, underline: true, color: c.style.color ?? 'yellow' },
+        }
+      }
+    }
     // 光标反色叠加
     const cursorCellIdx = cells.findIndex((c) => c.docPos === cursorPos)
     if (cursorCellIdx >= 0) {
       cells[cursorCellIdx] = { ...cells[cursorCellIdx], style: { ...cells[cursorCellIdx].style, inverse: true } }
     }
 
-    const visualRows = wrapCells(cells, Math.max(width, 4))
-    for (const vr of visualRows) {
+    const visualRows = wrapCells(cells, Math.max(contentWidth, 4))
+    for (let vi = 0; vi < visualRows.length; vi++) {
+      const vr = visualRows[vi]
       const rowCells = cells.slice(vr.start, vr.end)
-      rows.push({ segments: cellsToSegments(rowCells), width: vr.width })
+      rows.push({ segments: cellsToSegments(rowCells), width: vr.width, lineNo: vi === 0 && sourceMode ? ln : undefined })
       if (cursorCellIdx >= vr.start && cursorCellIdx < vr.end) {
         let x = 0
         for (let i = vr.start; i < cursorCellIdx; i++) x += cells[i].w
-        cursor = { x, y: rows.length - 1 }
+        cursor = { x: gutter + x, y: rows.length - 1 }
         cursorRowWidth = vr.width
       }
     }

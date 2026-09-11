@@ -85,6 +85,10 @@ export function classesToStyle(classes: string[], base: SpanStyle): SpanStyle {
       case 'cm-code-line':
         out.color = out.color ?? 'green'
         break
+      case 'cm-focus-dim':
+        // 专注模式：非活跃块整体淡化（TUI.md §5）
+        out.dim = true
+        break
       default:
         if (HEADING_COLORS[cls] !== undefined) {
           out.bold = true

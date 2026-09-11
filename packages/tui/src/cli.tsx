@@ -8,9 +8,8 @@
 import { render } from 'ink'
 import { docState } from './state'
 import { layoutViewport } from './editor/layout'
-import { EditorSession } from './editor/session'
 import { loadFile } from './editor/doc'
-import { TuiApp } from './editor/app'
+import { makeTab, WorkspaceApp } from './workspace'
 
 const SAMPLE = [
   '# YupMark TUI',
@@ -41,8 +40,8 @@ function exitAltScreen(): void {
 }
 
 async function main(): Promise<void> {
-  const fileArg = process.argv[2]
-  const path = fileArg !== undefined && fileArg.length > 0 ? fileArg : null
+  const fileArgs = process.argv.slice(2).filter((a) => a.length > 0)
+  const path = fileArgs[0] !== undefined ? fileArgs[0] : null
   const content = path === null ? SAMPLE : loadFile(path)
 
   if (!process.stdout.isTTY) {
@@ -65,7 +64,7 @@ async function main(): Promise<void> {
     return
   }
 
-  const session = new EditorSession(path, content, 0)
+
 
   enterAltScreen()
   process.on('exit', exitAltScreen)
@@ -73,7 +72,8 @@ async function main(): Promise<void> {
     process.on(sig, () => process.exit(0))
   }
 
-  const instance = render(<TuiApp session={session} />, {
+  const tabs = fileArgs.length > 0 ? fileArgs.map((p) => makeTab(p, loadFile(p))) : [makeTab(null, content)];
+  const instance = render(<WorkspaceApp initialTabs={tabs} />, {
     exitOnCtrlC: true,
     incrementalRendering: true,
   })

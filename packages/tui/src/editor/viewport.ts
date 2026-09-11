@@ -30,3 +30,8 @@ export function adjustFirstLine(
 export function centerOnCursor(cursorLine: number, docLines: number, height: number): number {
   return Math.max(1, Math.min(cursorLine - Math.floor(height / 2), docLines - height + 1))
 }
+
+/** 打字机模式：光标行恒居中（替代 adjustFirstLine） */
+export function typewriterFirstLine(cursorLine: number, docLines: number, height: number): number {
+  return Math.max(1, Math.min(cursorLine - Math.floor(height / 2), Math.max(1, docLines - height + 1)))
+}

@@ -180,7 +180,7 @@ Ink useInput → keys.ts 翻译 → view-less 事务调度
 | **MT0 脚手架 + 内核抽包** ✅（2026-09-11） | npm workspaces monorepo；`src/renderer/editor → packages/live-cm` 平移（零逻辑改动）；桌面端改引用；TUI 包骨架 + Ink 备用屏 hello world；**纯 Node 无头冒烟脚本**（buildLiveDecorations 在无 DOM 下跑通） | 桌面端全部用例照旧全绿（仅 import 路径变化，生产构建产物 hash 不变）；`node packages/tui/scripts/headless-smoke.mjs` 输出装饰区间 ✅ |
 | **MT1 编辑面 MVP** ✅（2026-09-11） | EditorSurface：单栏渲染态（基础语法全表 §5 上半）+ 光标所在块显源码 + CJK 宽字符安全 + 自动保存 + 打开/编辑/保存单文件 | 中文 10k 行文档滚动/输入流畅（实测每键 14ms，见 §12 备忘）；samples/ 渲染经 CLI 预览验证；IME 组合输入待真机手验 |
 | **MT2 高级语法** ✅（2026-09-11，**表格网格编辑模式已按方案 A 落地**） | 表格 box 网格（渲染 + 单元格导航编辑 + 底部上下文栏）+ 数学 Unicode 近似 + mermaid/图片占位框 + 代码块 ANSI 高亮 | samples/ 黄金样例经 CLI 渲染验证（含近似失败降级路径）；表格/数学/网格/布局共 42 用例 |
-| **MT3 壳与效率** | 文件树/大纲/多标签（状态快照）/查找替换/视图三件套/上下文菜单 | 典型仓库（500+ 文件）树导航流畅；⌘F 等价物与桌面行为对齐清单 |
+| **MT3 壳与效率** 🔶 MT3a ✅（2026-09-11） | MT3a：多标签 + 查找替换 + 大纲 + 视图三件套；MT3b：文件树 + 上下文菜单 | MT3a 验收：查找替换/大纲/三件套共 10 用例 + workspace 冒烟；视图键位因终端无 F 键改 Alt 系（§12c） |
 | **MT4 主题与收口** | 7 主题调色板 + i18n + 会话恢复 + 外部修改检测（三选一弹窗）+ 设置栏 | 七主题目测无破相；外部修改流程与桌面一致 |
 | **MT5 分发** | npm 包 `yupmark-tui`（bin `yupmark`）+ README 双语 TUI 章节 + CI 加 TUI 构建矩阵（Linux/macOS/Windows） | `npx yupmark-tui` 三平台开箱即用；单文件二进制（bun/pkg）列 v2 |
 
@@ -235,6 +235,17 @@ Ink useInput → keys.ts 翻译 → view-less 事务调度
 3. **非 TTY 预览通道升级**：cli 的 CI 输出从 MT0 简化路径改为完整视口装配管线（与 TUI 同一渲染路径），黄金样例（samples/m1、m3）经此验证。
 4. **表格网格编辑模式（方案 A，用户拍板）已落地**：`table-mode.ts` 的格 span 模型——文档光标即单元格内插入符（激活判定/所在格/格内偏移全部由 state 纯推导，打字直写源码、undo 逐字）；`table-keys.ts` 路由 Tab/⏎/方向键跨格导航（边界跳出表格）、Backspace/Delete 格内删字符（格首尾跨格）、粘贴换行压空格；结构性操作复用内核 tableOps（Alt+R 加行 · Alt+N 加列 · Alt+D 删行 · Alt+X 删列 · Alt+A 循环对齐 · Alt+T 删表），整表重写后重锚定格光标；渲染层把光标所在表格强制画成网格（激活格 cyan + 插入符反色，useCursor 坐标含网格偏移）；状态栏切表格上下文提示条。进入边界（表格起点）经 `resolveInner` 向后偏置探测修正。
 5. 验证基线：**31 文件 / 239 用例**；每键 15.6ms@10k 行（含 tableAt 树解析，无回归）。
+
+## 12c. MT3a 落地备忘（2026-09-11）
+
+1. **架构**：`workspace.tsx` 总装——单一输入路由（浮层打开时浮层独占，否则 TuiApp 经 `preInterceptor` 先截获全局组合键）；TuiApp 改为受控组件（totalHeight/inputActive/highlights/底部浮层插槽/保存状态上抛/flush 注册）。
+2. **视图三件套键位变更**（终端无 F 键上报，ink Key 类型不含 F1-F12）：源码 `Alt+S`（TUI.md §7 原定 Ctrl+/ 因多数终端把 Ctrl+/ 上报为 Ctrl+_ 不可靠而弃）、专注 `Alt+F`、打字机 `Alt+P`。三件套直接 dispatch 内核 StateEffect（`setSourceMode` 等，无头）；TUI 的 `docState` 显式挂载三个视图字段（桌面在 liveRender 内注册）。
+3. **源码模式渲染**：行号槽（每文档行首个视觉行携带 lineNo，右对齐 + 光标列偏移含 gutter 宽）；标记由内核 sourceMode 分支自然全显。
+4. **查找替换**：`^F/^H` 打开（替换模式多一行 + Tab 切焦点）；⏎/⇧⏎ 命中循环；`Alt+R` 替换当前 / `Alt+A` 全部；命中重算后光标定位。高亮：当前命中反色、其余下划线黄字（layout highlights 参数，memo key 含命中摘要）。
+5. **大纲**：`Alt+O` 开关（模态：j/k/⏎/Esc）；复用内核 `extractOutline`/`activeOutlineItem`；面板 30 列右侧，光标所在标题 cyan 标记。
+6. **多标签**：`Alt+]/[` 循环切换、`Alt+W` 关闭（关前 flush 自动保存，最后一张关闭退出）；TabBar 按宽度预算截断标签名（CJK 宽度安全）；dirty 点经 Autosaver 状态上抛聚合。`yupmark a.md b.md` 多文件开多标签。
+7. 已知边界（MT3b/打磨）：状态栏提示文案按宽度截断（已做 CJK 安全裁剪）；大纲面板与编辑面同行布局（窄终端下编辑面变窄属预期）；选区高亮渲染仍未做（仅光标反色）。
+8. 验证基线：**33 文件 / 248 用例**；11.7ms@10k 行（视图字段读取零开销）。
 
 ## 13. 与既有文档的关系
 

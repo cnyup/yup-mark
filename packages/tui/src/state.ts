@@ -12,6 +12,7 @@ import { EditorState } from '@codemirror/state'
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { languages } from '@codemirror/language-data'
 import { mathSyntax } from '@yupmark/live-cm/mathSyntax'
+import { sourceModeField, focusModeField, typewriterModeField } from '@yupmark/live-cm/viewModes'
 
 /** 创建无头编辑状态：doc + 光标位置（默认文末） */
 export function docState(doc: string, anchor?: number): EditorState {
@@ -24,6 +25,10 @@ export function docState(doc: string, anchor?: number): EditorState {
         extensions: mathSyntax,
         addKeymap: false, // 键位由 TUI 的 keys.ts 翻译（MT1），不要 CM 的 DOM 键表
       }),
+      // 视图三件套字段（无头可 dispatch；桌面在 liveRender 内注册，TUI 显式挂载）
+      sourceModeField,
+      focusModeField,
+      typewriterModeField,
     ],
     selection: { anchor: anchor ?? doc.length },
   })
