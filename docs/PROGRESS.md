@@ -113,3 +113,4 @@
 - **接线**：layout.ts MermaidWidget 分支——字符画成功即用，否则回落原占位框；**绝不画错图**（未识别语法/超 40 节点/超终端宽/超 50 行高 → 占位框）。
 - **验证**：m3 样例（菱形分支+跳层檐列+自环）经 run-cli.mjs 真实管线目检；解析/渲染/LR/降级 **13 新用例**；typecheck×3 + lint 零告警；基线 **36 文件 / 280 用例**全绿。
 - **下一步**：仍是 MT5（npm 分发 + CI 三平台矩阵）。
+- **整屏闪烁修复（2026-09-11）**：用户实测"光标一动整屏闪"。取证（YUPMARK_DEBUG_OUT 捕获 VT 载荷）双根因：① ink 满屏应用绕过增量 renderer 每帧 clearTerminal 整帧重写 → run-cli.mjs esbuild 插丁放行增量路径（每键只重写变化行）；② Autosaver 误把纯选区移动判脏（subscribe 全量触发 + 基线空串）→ session.subscribeDoc（仅 docChanged）+ 基线=打开时内容。附带：eslint ignores + spikes/**。36 文件 / 280 用例、typecheck×3、lint 全绿（TUI.md §12g）。

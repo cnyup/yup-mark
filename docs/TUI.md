@@ -275,6 +275,16 @@ Ink useInput → keys.ts 翻译 → view-less 事务调度
 5. **护栏**：>40 节点、>80 边、源码 >4000 字符、画布 > 终端宽、>50 行高 → null 占位框。已知取舍：点线/粗线渲染为实线（解析保留类型）；标签含 `.-`/`==` 的内联形式可能误判→null 降级（安全侧）。
 6. 验证：m3 样例（菱形分支 + 跳层檐列 + 自环 + 同层直连）经 `run-cli.mjs` 真实管线目检；LR/回边/扇入扇出/引号/实体/降级共 **13 新用例**；基线 **36 文件 / 280 用例**全绿，typecheck×3 + lint 零告警。
 
+## 12g. 落地备忘：整屏闪烁修复（2026-09-11，用户实测反馈）
+
+> 症状：光标一动整屏闪一下。取证：`YUPMARK_DEBUG_OUT=<文件>` 环境变量把发往终端的每个 VT 载荷落盘（cli.tsx，常驻调试设施），WSL 侧需 `export WSLENV=YUPMARK_DEBUG_OUT` 传递给 node.exe。
+
+1. **根因（帧层）**：ink 6.8 对「帧高 ≥ 终端行数」的满屏应用**绕过增量 renderer**（ink.js `lastOutputHeight >= rows` 分支），每帧 `clearTerminal`（`\x1b[2J\x1b[3J\x1b[H`）+ 整帧重写——清屏瞬间即闪烁；其 `\x1b[?2026`（同步输出）包裹在 ConPTY/WSL interop 路径不透传，救不回来。而增量 renderer 本就为无尾随换行的满屏帧设计（`hasTrailingNewline` 分支）。**修复**：run-cli.mjs 加 esbuild 插件 `patch-ink-fullscreen`（锚点替换为 `!incrementalRendering && ...`，锚点失配显式抛错）；**MT5 发布打包必须带上本插件**。
+2. **修复后每键载荷**（实测捕获）：`2026h → cursorUp(帧高) → 跳过未变行（\x1b[E）→ 重写 2-3 个变化行 + 状态栏 → 光标定位 → 2026l`，零清屏。
+3. **根因（脏判定）**：Autosaver 原经 `session.subscribe` 订阅（每次 dispatch 触发，含纯选区移动）+ 文件基线初始化为空串 → 任何首次按键即"未保存"+800ms 后重写文件。**修复**：`session.subscribeDoc`（多播，仅 `tr.docChanged` 触发；替代单槽 onDocChanged，react-hooks 编译器禁止对 props 派生对象赋属性）+ Autosaver 基线 = 打开时内容（干净退出不再重写文件、mtime 不churn）。
+4. **附带**：eslint ignores 增加 `spikes/**`（用户实验区构建产物不应进产品 lint）；外部静默重载后基线仍是旧内容 → 会多一次同内容落盘（无害，待 v1.5 顺手加 resetBaseline）。
+5. 验证：捕获对比（前：每键 2J 整帧；后：逐行 diff）+ 状态栏全程无 `·未保存`；36 文件 / 280 用例、typecheck×3、lint 全绿。
+
 ## 13. 与既有文档的关系
 
 - DESIGN.md：新增 ADR D13–D17；§3 架构图补 packages 视角（本文件 §3 为准）。

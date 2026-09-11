@@ -229,15 +229,18 @@ describe('EditorSession（状态容器）', () => {
     expect(s.version).toBe(2)
   })
 
-  it('onDocChanged 仅文档变化时触发', () => {
+  it('subscribeDoc 仅文档变化时触发（纯选区不触发）', () => {
     const s = makeSession('a', 1)
     let docEvents = 0
-    s.onDocChanged = () => {
+    const off = s.subscribeDoc(() => {
       docEvents++
-    }
+    })
     s.dispatch({ selection: { anchor: 0 } })
     expect(docEvents).toBe(0)
     s.dispatch({ changes: { from: 1, insert: '!' } })
+    expect(docEvents).toBe(1)
+    off()
+    s.dispatch({ changes: { from: 1, insert: '?' } })
     expect(docEvents).toBe(1)
   })
 })

@@ -28,10 +28,11 @@ export class Autosaver {
     hooks: AutosaverHooks = {},
   ) {
     this.hooks = hooks
-    this.lastSaved = path === null ? getContent() : ''
+    // 基线 = 打开时的内容（磁盘文件亦然）：未编辑不判脏、干净退出不重写文件
+    this.lastSaved = getContent()
   }
 
-  /** 文档变化后调用（session.onDocChanged 接线） */
+  /** 文档变化后调用（session.subscribeDoc 接线） */
   changed(): void {
     if (this.path === null) return
     if (this.getContent() === this.lastSaved) return

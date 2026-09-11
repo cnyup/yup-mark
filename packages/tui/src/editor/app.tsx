@@ -157,11 +157,11 @@ export function TuiApp(props: TuiAppProps): React.JSX.Element {
     [onSaveState],
   )
 
-  // 自动保存器（构造时接线保存状态回调；经 session 订阅感知文档变化，不改 session）
+  // 自动保存器（构造时接线保存状态回调；subscribeDoc 只感知文档变化——纯选区移动不判脏不落盘）
   const [autosaver] = useState(
     () => new Autosaver(session.path, () => session.doc, { onState: (s) => setSaveStateBoth(s) }),
   )
-  useEffect(() => session.subscribe(() => autosaver.changed()), [session, autosaver])
+  useEffect(() => session.subscribeDoc(() => autosaver.changed()), [session, autosaver])
   useEffect(() => {
     registerFlush?.(() => autosaver.flush())
     registerBaseline?.(() => autosaver.savedContent())

@@ -8,14 +8,10 @@
 import { EditorState, type Transaction, type TransactionSpec } from '@codemirror/state'
 import { docState } from '../state'
 
-export type DocChangeListener = (tr: Transaction) => void
-
 export class EditorSession {
   state: EditorState
   /** 每次成功 dispatch 自增；React 订阅的快照值 */
   version = 0
-  /** 文档内容变化（自动保存触发器） */
-  onDocChanged: DocChangeListener | null = null
 
   constructor(readonly path: string | null, doc: string, anchor = 0) {
     this.state = docState(doc, anchor)
@@ -25,7 +21,9 @@ export class EditorSession {
     const tr = this.state.update(...specs)
     this.state = tr.state
     this.version++
-    if (tr.docChanged) this.onDocChanged?.(tr)
+    if (tr.docChanged) {
+      for (const fn of this.docListeners) fn()
+    }
     this.emit()
     return tr
   }
@@ -48,5 +46,15 @@ export class EditorSession {
 
   private emit(): void {
     for (const fn of this.listeners) fn()
+  }
+
+  // ---- 文档变化订阅（自动保存触发器；纯选区移动不触发） ----
+  private readonly docListeners = new Set<() => void>()
+
+  subscribeDoc = (fn: () => void): (() => void) => {
+    this.docListeners.add(fn)
+    return () => {
+      this.docListeners.delete(fn)
+    }
   }
 }

@@ -3,7 +3,7 @@ import tseslint from 'typescript-eslint'
 import reactHooks from 'eslint-plugin-react-hooks'
 
 export default tseslint.config(
-  { ignores: ['out/**', 'dist/**', 'node_modules/**', 'coverage/**', 'scripts/layout-harness/bundle.js', 'scripts/layout-harness/main.cjs'] },
+  { ignores: ['out/**', 'dist/**', 'node_modules/**', 'coverage/**', 'scripts/layout-harness/bundle.js', 'scripts/layout-harness/main.cjs', 'spikes/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
