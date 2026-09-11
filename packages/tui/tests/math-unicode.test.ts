@@ -31,6 +31,17 @@ describe('latexToUnicode（可表达集）', () => {
   it('\\left/\\right 剥除', () => {
     expect(latexToUnicode('\\left(a+b\\right)^2')).toBe('(a+b)²')
   })
+
+  it('脚本组平排回退（m3 样例三大公式全覆盖）', () => {
+    // 脚本组缺映射字符 → ^(...)/_(...) 平排，而非放弃整条公式
+    expect(latexToUnicode('e^{i\\pi} + 1 = 0')).toBe('e^(iπ) + 1 = 0')
+    expect(latexToUnicode('\\int_0^\\infty e^{-x^2} \\, dx = \\frac{\\sqrt{\\pi}}{2}')).toBe(
+      '∫₀^(∞) e^(-x²) dx = √(π)/2',
+    )
+    expect(latexToUnicode('\\sum_{n=1}^{\\infty} \\frac{1}{n^2} = \\frac{\\pi^2}{6}')).toBe(
+      '∑ₙ₌₁^(∞) 1/n² = π²/6',
+    )
+  })
 })
 
 describe('latexToUnicode（不可表达 → null 降级源码）', () => {
@@ -42,18 +53,12 @@ describe('latexToUnicode（不可表达 → null 降级源码）', () => {
     expect(latexToUnicode('\\foobar{x}')).toBeNull()
   })
 
-  it('无上标形字符的字符集', () => {
-    expect(latexToUnicode('x^{我们}')).toBeNull()
+  it('单字符脚本无映射（组形式才平排回退）', () => {
     expect(latexToUnicode('x_@')).toBeNull()
   })
 
   it('嵌套分数（线性化歧义）', () => {
     expect(latexToUnicode('\\frac{\\frac{a}{b}}{c}')).toBeNull()
-  })
-
-  it('无脚本形字符的上下标（含 ∞、嵌套脚本）', () => {
-    // ^\infty：∞ 无上标形；e^{-x^2}：脚本里再嵌脚本 → 均按 §6 契约显源码
-    expect(latexToUnicode('\\int_0^\\infty e^{-x^2}\\,dx')).toBeNull()
   })
 
   it('空输入', () => {

@@ -157,7 +157,9 @@ export function latexToUnicode(tex: string): string | null {
         continue
       }
       if (name === ',' || name === ';' || name === '!' || name === ' ' || name === 'quad' || name === 'qquad') {
-        out += name === 'quad' || name === 'qquad' ? ' ' : ''
+        // 间距命令自身即间距：吸收其前的显式空格，避免双空格
+        out = out.replace(/ +$/, '')
+        if (name === 'quad' || name === 'qquad') out += ' '
         continue
       }
       if (name === 'begin' || name === 'end') return null // 环境不支持
@@ -167,18 +169,25 @@ export function latexToUnicode(tex: string): string | null {
       continue
     }
     if (ch === '^' || ch === '_') {
+      // 组形式（{..} 或命令）允许平排回退；单字符脚本无映射维持 null（源码兜底）
+      const isGroup = src[i + 1] === '{' || src[i + 1] === '\\'
       const grp = readGroup(src, i + 1)
       if (!grp) return null
       i = grp.next
       // 上下标内容允许直接符号（\sum 的脚本已处理），也允许浅层文本
       const converted = convertSimple(grp.body, ch === '^')
       if (converted === null) {
-        // 组内含命令：递归近似后要求结果可脚本化
+        // 组内含命令：递归近似后要求结果可脚本化；
+        // 缺映射字符（如 π 无上标形）→ 组形式平排回退 ^(...) / _(...)，不放弃整条公式
         const inner = latexToUnicode(grp.body)
         if (inner === null) return null
         const scripted = groupToScript(inner, ch === '^' ? SUPERSCRIPT : SUBSCRIPT)
-        if (scripted === null) return null
-        out += scripted
+        if (scripted === null) {
+          if (!isGroup) return null
+          out += `${ch}(${inner})`
+        } else {
+          out += scripted
+        }
       } else {
         out += converted
       }
