@@ -28,6 +28,11 @@ const doc = [
   '![示意图](./img/a.png)',
   '',
   '```mermaid',
+  'sequenceDiagram',
+  '  U->>E: hi',
+  '```',
+  '',
+  '```mermaid',
   'flowchart TD',
   '  A-->B',
   '```',
@@ -36,7 +41,7 @@ const doc = [
 ].join('\n')
 
 describe('layoutViewport MT2 块装配', () => {
-  function layoutOf(anchor: number, width = 60, height = 30) {
+  function layoutOf(anchor: number, width = 60, height = 40) {
     return layoutViewport(docState(doc, anchor), { width, height, firstLine: 1, cursorPos: anchor })
   }
 
@@ -72,12 +77,16 @@ describe('layoutViewport MT2 块装配', () => {
     expect(all.some((r) => r.includes('e=mc² 行内公式'))).toBe(true)
   })
 
-  it('HR 渲染为横线，图片/mermaid 为占位框', () => {
+  it('HR 渲染为横线，图片/时序图为占位框，flowchart 画字符画', () => {
     const { rows } = layoutOf(doc.length)
     const all = rows.map(rowText)
     expect(all.some((r) => /^─+$/.test(r))).toBe(true)
     expect(all.some((r) => r.includes('▣') && r.includes('示意图'))).toBe(true)
-    expect(all.some((r) => r.includes('▶ mermaid · 流程图'))).toBe(true)
+    expect(all.some((r) => r.includes('▶ mermaid · 时序图'))).toBe(true)
+    // flowchart（D18 路线 B）：裸节点按矩形渲染，箭头连接
+    expect(all.some((r) => r.includes('│ A │'))).toBe(true)
+    expect(all.some((r) => r.includes('│ B │'))).toBe(true)
+    expect(all.some((r) => r.includes('↓'))).toBe(true)
   })
 
   it('代码块行获得 token 着色（关键字/字符串/注释有颜色）', () => {

@@ -53,6 +53,7 @@ Typora 的本质：文档由"块"（block）组成；**所有块始终渲染为�
 | D15 | TUI 代码位置 | 本仓库 monorepo（npm workspaces） | 内核抽 `packages/live-cm` + `packages/tui` |
 | D16 | TUI 特殊块降级 | 数学 Unicode 近似、mermaid/图片占位框、光标进入显源码 | 终端图形协议真渲染列 v2 |
 | D17 | TUI 键位体系 | Typora 桌面键位映射（终端键域内，冲突键找最近替代并公示） | vim 层列 v2 |
+| D18 | TUI mermaid 渲染 | flowchart 子集 ASCII 字符画（零依赖全终端）；其余类型/超限降级占位框 | 图形协议（kitty/sixel）真渲染列 v2 |
 
 ---
 
