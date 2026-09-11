@@ -2,9 +2,6 @@
  * 10k 行压测探针（MT1 验收）：模拟连续输入，测量每键耗时
  * （dispatch + 全量装饰计算 + 视口装配）。运行：node scripts/perf.mjs
  */
-import { EditorState } from '@codemirror/state'
-import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
-import { mathSyntax } from '@yupmark/live-cm/mathSyntax'
 import { buildLiveDecorations } from '@yupmark/live-cm/rules'
 import { layoutViewport } from '../src/editor/layout'
 import { docState } from '../src/state'

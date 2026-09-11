@@ -28,6 +28,12 @@ export interface Span extends SpanStyle {
   text: string
 }
 
+/** 渲染段（grid.ts / layout.ts 共用的产出单元） */
+export interface RenderSegment {
+  text: string
+  style: SpanStyle
+}
+
 export interface PreviewLine {
   spans: Span[]
 }

@@ -179,7 +179,7 @@ Ink useInput → keys.ts 翻译 → view-less 事务调度
 |------|--------|----------|
 | **MT0 脚手架 + 内核抽包** ✅（2026-09-11） | npm workspaces monorepo；`src/renderer/editor → packages/live-cm` 平移（零逻辑改动）；桌面端改引用；TUI 包骨架 + Ink 备用屏 hello world；**纯 Node 无头冒烟脚本**（buildLiveDecorations 在无 DOM 下跑通） | 桌面端全部用例照旧全绿（仅 import 路径变化，生产构建产物 hash 不变）；`node packages/tui/scripts/headless-smoke.mjs` 输出装饰区间 ✅ |
 | **MT1 编辑面 MVP** ✅（2026-09-11） | EditorSurface：单栏渲染态（基础语法全表 §5 上半）+ 光标所在块显源码 + CJK 宽字符安全 + 自动保存 + 打开/编辑/保存单文件 | 中文 10k 行文档滚动/输入流畅（实测每键 14ms，见 §12 备忘）；samples/ 渲染经 CLI 预览验证；IME 组合输入待真机手验 |
-| **MT2 高级语法** | 表格 box 网格（含单元格编辑 + 上下文工具栏）+ 数学 Unicode 近似 + mermaid/图片占位框 + 代码块 ANSI 高亮 | samples/ 全量黄金样例集通过（含近似失败降级路径）；表格行列操作复用 tableOps 用例 |
+| **MT2 高级语法** ✅（2026-09-11，表格网格编辑模式除外） | 表格 box 网格（**渲染完成；单元格网格编辑待定，见 §12b**）+ 数学 Unicode 近似 + mermaid/图片占位框 + 代码块 ANSI 高亮 | samples/ 黄金样例经 CLI 渲染验证（含近似失败降级路径）；grid/math-unicode/mt2-layout 共 24 用例 |
 | **MT3 壳与效率** | 文件树/大纲/多标签（状态快照）/查找替换/视图三件套/上下文菜单 | 典型仓库（500+ 文件）树导航流畅；⌘F 等价物与桌面行为对齐清单 |
 | **MT4 主题与收口** | 7 主题调色板 + i18n + 会话恢复 + 外部修改检测（三选一弹窗）+ 设置栏 | 七主题目测无破相；外部修改流程与桌面一致 |
 | **MT5 分发** | npm 包 `yupmark-tui`（bin `yupmark`）+ README 双语 TUI 章节 + CI 加 TUI 构建矩阵（Linux/macOS/Windows） | `npx yupmark-tui` 三平台开箱即用；单文件二进制（bun/pkg）列 v2 |
@@ -227,6 +227,14 @@ Ink useInput → keys.ts 翻译 → view-less 事务调度
 5. **光标双轨**：反色格（视觉块状光标）+ ink useCursor 终端光标锚定（IME preedit 显示在光标处——中文输入生命线）。
 6. **已知边界（MT2+ 处理）**：选区只有状态没有高亮渲染（查找替换 MT3 需要）；样式快捷键（Ctrl+B/I…）与视图三件套未接；Tab 列表层级升降未做（与桌面 ROADMAP P0 共享 blockOps 实现任务）。
 7. 验证基线：**27 文件 / 197 用例**；`node packages/tui/scripts/perf.mjs` 为 10k 行性能探针（纳入 MT 验收工具）。
+
+## 12b. MT2 落地备忘（2026-09-11）
+
+1. **已落地**：行装配器升级为三态行内容（cells / block 多行预渲染 / absorbed 被块吞并）；表格 box 网格（`┌─┬─┐` + 表头粗体 + 对齐生效 + 超宽列截断）；行内/块级数学 Unicode 近似（白名单式 `latexToUnicode`，失败降级源码）；mermaid/图片信息占位框（`─ ▶ mermaid · 流程图 · 6 行 ─`）；HR 全宽线；代码块 token 着色（lezer `highlightTree` + tag→ANSI 色，仅 FencedCode 内生效）。块渲染按 widget 实例本趟缓存（长表格不重复渲染）。
+2. **降级契约**（黄金样例实测）：`e=mc²`/`∑ᵢ₌₁ⁿ`/`√(π)/2` 近似成功；`^\infty`、`e^{i\pi}`（π 无上标形）、嵌套脚本 → 整块显源码——与 §6 一致。
+3. **非 TTY 预览通道升级**：cli 的 CI 输出从 MT0 简化路径改为完整视口装配管线（与 TUI 同一渲染路径），黄金样例（samples/m1、m3）经此验证。
+4. **⏳ 待定（用户决策）**：表格**网格编辑模式**（§5 设计：光标进入→网格保持渲染 + 单元格导航编辑 + 底部上下文工具栏，复用 tableOps）。当前实现为"光标进入→源码编辑"（与数学/mermaid 同模型，编辑能力完整）。二者选一：A) 按 §5 原设计实现网格编辑（约一个独立里程碑的量级）；B) 保持源码编辑，网格只读渲染，资源优先 MT3（壳与效率）。
+5. 验证基线：**30 文件 / 221 用例**；每键 12.3ms@10k 行（无回归）。
 
 ## 13. 与既有文档的关系
 

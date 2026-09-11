@@ -6,8 +6,8 @@
  * 非 TTY（CI、管道）：打印渲染态纯文本预览后退出 0——脚本化验证通道。
  */
 import { render } from 'ink'
-import { renderPreviewLines, previewToPlainText } from './preview'
 import { docState } from './state'
+import { layoutViewport } from './editor/layout'
 import { EditorSession } from './editor/session'
 import { loadFile } from './editor/doc'
 import { TuiApp } from './editor/app'
@@ -46,8 +46,22 @@ async function main(): Promise<void> {
   const content = path === null ? SAMPLE : loadFile(path)
 
   if (!process.stdout.isTTY) {
-    // 非交互环境：渲染态纯文本预览（供 CI 与脚本化验证，退出码 0）
-    process.stdout.write(previewToPlainText(renderPreviewLines(docState(content))) + '\n')
+    // 非交互环境：走完整视口装配管线（表格网格/数学近似/占位框/代码着色，
+    // 与 TUI 同一渲染路径——黄金样例的脚本化验证通道），纯文本输出
+    const state = docState(content)
+    const lineCount = state.doc.lines
+    const layout = layoutViewport(state, {
+      width: Math.max(40, 72),
+      height: lineCount + 4,
+      firstLine: 1,
+      cursorPos: Math.max(0, content.length - 1), // 光标贴文末但不在末块内激活特殊块
+    })
+    process.stdout.write(
+      layout.rows
+        .map((r) => r.segments.map((s) => s.text).join('').replace(/\s+$/, ''))
+        .join('\n')
+        .replace(/\n+$/, '') + '\n',
+    )
     return
   }
 
