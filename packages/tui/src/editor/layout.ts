@@ -34,6 +34,7 @@ import {
 import { charWidth, wrapCells, type Cell } from './measure'
 import { latexToUnicode } from '../math-unicode'
 import {
+  renderTableGrid,
   renderTableGridFromSource,
   renderPlaceholder,
   renderHr,
@@ -41,6 +42,7 @@ import {
   mathInlineStyle,
   mermaidInfo,
 } from './grid'
+import { tableAt, cellAt, parsedForRender } from './table-mode'
 
 /** 带 doc 偏移与样式的单元格 */
 export interface StyledCell extends Cell {
@@ -86,7 +88,8 @@ function blockWidgetRows(
   width: number,
 ): RenderSegment[][] | null {
   if (widget instanceof TableWidget) {
-    return renderTableGridFromSource(source, { width })
+    const grid = renderTableGridFromSource(source, { width })
+    return grid === null ? null : grid.rows
   }
   if (widget instanceof MathWidget && widget.display) {
     const approx = latexToUnicode(widget.tex)
@@ -322,8 +325,43 @@ function computeViewport(state: EditorState, opts: LayoutOptions): ViewportLayou
   let cursorRowWidth = 0
   const blockCache = new Map<unknown, RenderSegment[][] | null>()
 
+  // 光标所在表格：网格编辑模式覆盖（源码行被网格整体替换；方案 A，TUI.md §5）
+  const activeTable = tableAt(state, cursorPos)
+  const activeParsed = activeTable === null ? null : parsedForRender(activeTable)
+  const activeCursor =
+    activeTable === null || activeParsed === null ? null : cellAt(activeTable, cursorPos)
+  let activeTableEmitted = activeTable === null || activeParsed === null
+
   for (let ln = startLine; ln <= endLine; ln++) {
     const line = doc.line(ln)
+
+    if (
+      activeTable !== null &&
+      line.from >= activeTable.from &&
+      line.from <= activeTable.to
+    ) {
+      if (!activeTableEmitted && activeParsed !== null) {
+        activeTableEmitted = true
+        const grid = renderTableGrid(activeParsed, {
+          width,
+          cursor:
+            activeCursor !== null
+              ? { row: activeCursor.row, col: activeCursor.col, offset: activeCursor.offset }
+              : null,
+        })
+        const blockStart = rows.length
+        for (const segs of grid.rows) {
+          rows.push({ segments: segs, width: segs.reduce((acc, s) => acc + charWidth(s.text), 0) })
+        }
+        if (grid.caret !== null) {
+          cursor = { x: grid.caret.x, y: blockStart + grid.caret.y }
+          cursorRowWidth = 0
+        }
+      }
+      // 网格只产出一块；表格其余源码行全部吞并
+      continue
+    }
+
     const content = buildLineContent(state, line.from, line.to, line.text, idx, codeTokens, width, blockCache)
 
     if (content.kind === 'absorbed') continue

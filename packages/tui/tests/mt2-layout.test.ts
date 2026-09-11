@@ -50,11 +50,19 @@ describe('layoutViewport MT2 块装配', () => {
     expect(all.some((r) => /^\| 名称/.test(r))).toBe(false)
   })
 
-  it('光标进入表格 → 显源码（竖线可见）', () => {
-    const anchor = doc.indexOf('苹果')
-    const { rows } = layoutOf(anchor)
+  it('光标进入表格 → 网格保持渲染 + 插入符（方案 A）', () => {
+    const anchor = doc.indexOf('苹果') + 1 // "苹" 后
+    const { rows, cursor } = layoutOf(anchor)
     const all = rows.map(rowText)
-    expect(all.some((r) => r.includes('|') && r.includes('苹果'))).toBe(true)
+    // 网格仍在（边框可见），不退回源码竖线行
+    expect(all.some((r) => /^┌/.test(r))).toBe(true)
+    expect(all.some((r) => /^\| 苹果/.test(r))).toBe(false)
+    // 激活格高亮 + 插入符存在
+    const activeSegs = rows[cursor?.y ?? 0].segments.filter(
+      (s) => s.style.color === 'cyan' || s.style.inverse === true,
+    )
+    expect(activeSegs.length).toBeGreaterThan(0)
+    expect(cursor).not.toBeNull()
   })
 
   it('块级数学 Unicode 近似居中，行内数学近似', () => {

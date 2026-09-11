@@ -18,7 +18,7 @@ describe('renderTableGrid', () => {
   }
 
   it('产出 box 边框与表头/数据行', () => {
-    const rows = rowsText(renderTableGrid(table, { width: 60 }))
+    const rows = rowsText(renderTableGrid(table, { width: 60 }).rows)
     expect(rows[0]).toMatch(/^┌─*┬─*┬─*┐$/)
     expect(rows[1]).toContain('名称')
     expect(rows[1]).toContain('单价')
@@ -30,14 +30,14 @@ describe('renderTableGrid', () => {
   })
 
   it('对齐生效：right 列数字右贴', () => {
-    const rows = rowsText(renderTableGrid(table, { width: 60 }))
+    const rows = rowsText(renderTableGrid(table, { width: 60 }).rows)
     const dataLine = rows[3]
     // '5.5' 右对齐 → 前面有空格填充
     expect(/ +5\.5 │$/.test(dataLine)).toBe(true)
   })
 
   it('超宽列截断（显示宽度不超限）', () => {
-    const rows = rowsText(renderTableGrid(table, { width: 30 }))
+    const rows = rowsText(renderTableGrid(table, { width: 30 }).rows)
     expect(rows.every((r) => textWidth(r) <= 30)).toBe(true)
     expect(rows[4]).toContain('…')
   })
@@ -48,7 +48,7 @@ describe('renderTableGridFromSource', () => {
     const src = ['| a | b |', '| --- | ---: |', '| 1 | 2 |'].join('\n')
     const rows = renderTableGridFromSource(src, { width: 40 })
     expect(rows).not.toBeNull()
-    expect(rowsText(rows!)[1]).toContain('a')
+    expect(rowsText(rows!.rows)[1]).toContain('a')
   })
 
   it('非表格源返回 null（降级源码）', () => {

@@ -15,11 +15,24 @@ const seg = (text: string, style: SpanStyle = {}): RenderSegment => ({ text, sty
 // 表格 box 网格
 // ---------------------------------------------------------------------------
 
+export interface GridCursor {
+  row: number
+  col: number
+  /** 格内字符偏移（插入符位置；等于格文本长度 = 行尾） */
+  offset: number
+}
+
+export interface GridResult {
+  rows: RenderSegment[][]
+  /** 插入符在网格内的坐标（列 = 显示列，行 = 网格行下标；供 useCursor） */
+  caret: { x: number; y: number } | null
+}
+
 interface GridOptions {
   /** 可用显示宽度（终端列宽） */
   width: number
-  /** 网格内单元格光标（MT2 预留：编辑模式的反色格） */
-  cursorCell?: { row: number; col: number } | null
+  /** 单元格光标（编辑模式：激活格着色 + 插入符反色）；null = 只读渲染 */
+  cursor?: GridCursor | null
 }
 
 /** 单列宽度收缩到总宽内：从最宽列逐列扣减（保底 3 列宽） */
@@ -70,27 +83,66 @@ function padCell(text: string, width: number, align: 'left' | 'center' | 'right'
 }
 
 /**
- * ParsedTable → box 网格行（表头粗体，对齐生效）。
- * 单元格内容为源码文本（行内语法在格内不再渲染——与桌面网格一致）。
+ * ParsedTable → box 网格（表头粗体，对齐生效）。
+ * 编辑模式：cursor 指定格以 cyan 高亮、格内 offset 处插入符反色；
+ * 只读渲染：cursor 缺省。
  */
-export function renderTableGrid(table: ParsedTable, opts: GridOptions): RenderSegment[][] {
+export function renderTableGrid(table: ParsedTable, opts: GridOptions): GridResult {
   const { align, header, rows } = table
   const all = [header, ...rows]
   const widths = fitColumnWidths(all, Math.max(opts.width, all.length + 1))
   const aligns = align
+  const cur = opts.cursor ?? null
 
   const border = (left: string, mid: string, right: string): RenderSegment =>
     seg(left + widths.map((w) => '─'.repeat(w + 2)).join(mid) + right, { dim: true })
+
+  let caret: { x: number; y: number } | null = null
+
+  /** 激活格内容 → 段（插入符处反色拆分；激活期左对齐，移出后恢复列对齐），并记录插入符列偏移 */
+  const activeCellSegments = (text: string, width: number, colIdx: number): RenderSegment[] => {
+    const clipped = clipToWidth(text, width)
+    const visible = Array.from(clipped)
+    // 插入符绝对列：边框 + 此前各列（边框+内容+空格×2）
+    let before = 1
+    for (let c = 0; c < colIdx; c++) before += (widths[c] ?? 0) + 2 + 1
+    before += 1 // 本格前导空格
+    const offset = Math.min(cur?.offset ?? 0, visible.length)
+    const left = visible.slice(0, offset).join('')
+    const atChar = visible[offset] ?? ' '
+    const right = visible.slice(offset + 1).join('')
+    const pad = Math.max(0, width - textWidth(clipped))
+    const parts: RenderSegment[] = [seg(' ', { color: 'cyan' })]
+    if (left !== '') parts.push(seg(left, { color: 'cyan' }))
+    parts.push(seg(atChar, { color: 'cyan', inverse: true }))
+    const rest = right + ' '.repeat(pad)
+    if (rest !== '') parts.push(seg(rest, { color: 'cyan' }))
+    parts.push(seg(' ', { color: 'cyan' }))
+    if (cur !== null) {
+      let x = before
+      for (let i = 0; i < offset; i++) x += textWidth(visible[i] ?? ' ')
+      caret = { x, y: -1 } // y 由 dataRow 回填
+    }
+    return parts
+  }
 
   const dataRow = (cells: string[], isHeader: boolean, rowIdx: number): RenderSegment[] => {
     const out: RenderSegment[] = []
     for (let c = 0; c < cells.length; c++) {
       const style: SpanStyle = isHeader ? { bold: true } : {}
-      const isCursor =
-        opts.cursorCell != null && opts.cursorCell.row === rowIdx && opts.cursorCell.col === c
-      const padded = padCell(cells[c] ?? '', widths[c] ?? 0, aligns[c] ?? (isHeader ? 'center' : null))
-      out.push(seg(c === 0 ? '│' : '│', { dim: true }))
-      out.push(seg(` ${padded} `, isCursor ? { ...style, inverse: true } : style))
+      const isActive = cur !== null && cur.row === rowIdx && cur.col === c
+      out.push(seg('│', { dim: true }))
+      const alignForCell = aligns[c] ?? (isHeader ? 'center' : null)
+      if (isActive) {
+        out.push(...activeCellSegments(cells[c] ?? '', widths[c] ?? 0, c))
+        if (caret !== null && caret.y === -1) {
+          // 网格行下标：表头=1（顶边框后）；数据行=行号+2（还有分隔行）
+          caret = { ...caret, y: rowIdx === 0 ? 1 : rowIdx + 2 }
+        }
+      } else {
+        const padded = padCell(cells[c] ?? '', widths[c] ?? 0, alignForCell)
+        out.push(seg(` ${padded} `, style))
+      }
     }
     out.push(seg('│', { dim: true }))
     return out
@@ -102,11 +154,11 @@ export function renderTableGrid(table: ParsedTable, opts: GridOptions): RenderSe
   result.push([border('├', '┼', '┤')])
   rows.forEach((r, i) => result.push(dataRow(r, false, i + 1)))
   result.push([border('└', '┴', '┘')])
-  return result
+  return { rows: result, caret }
 }
 
-/** 表格源文本 → 网格行（解析失败返回 null，调用方降级源码） */
-export function renderTableGridFromSource(source: string, opts: GridOptions): RenderSegment[][] | null {
+/** 表格源文本 → 网格（解析失败返回 null，调用方降级源码） */
+export function renderTableGridFromSource(source: string, opts: GridOptions): GridResult | null {
   const parsed = parseMarkdownTable(source)
   if (parsed === null) return null
   return renderTableGrid(parsed, opts)

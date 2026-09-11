@@ -10,6 +10,8 @@
 import type { Key } from 'ink'
 import type { EditorSession } from './session'
 import { colToIndex, indexToCol, stepBack, stepForward } from './measure'
+import { tableAt } from './table-mode'
+import { handleTableKey, snapCursorIntoTable } from './table-keys'
 
 export interface KeyContext {
   /** 编辑区高度（视觉行数），PgUp/PgDn 用 */
@@ -38,6 +40,8 @@ function moveTo(session: EditorSession, head: number, extend: boolean): void {
   const pos = Math.max(0, Math.min(doc.length, head))
   const anchor = extend ? session.state.selection.main.anchor : pos
   session.dispatch({ selection: { anchor, head: pos } })
+  // 进入表格（落在管道/空隙上）→ 吸附到格文本，进入网格编辑模式
+  if (!extend) snapCursorIntoTable(session)
 }
 
 /** 上/下一行，保持目标视觉列（CJK 宽度感知） */
@@ -109,6 +113,15 @@ export function handleKey(session: EditorSession, input: string, key: Key, ctx: 
   const { doc, selection } = session.state
   const main = selection.main
   const line = doc.lineAt(main.head)
+
+  // 表格网格编辑模式优先（Ctrl 系壳层动作除外；方案 A，TUI.md §5）
+  if (!key.ctrl) {
+    const table = tableAt(session.state, main.head)
+    if (table !== null) {
+      const handled = handleTableKey(session, input, key, table, ctx)
+      if (handled !== null) return handled
+    }
+  }
 
   if (key.ctrl) {
     switch (input) {

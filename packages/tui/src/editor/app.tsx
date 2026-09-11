@@ -11,6 +11,7 @@ import type { EditorSession } from './session'
 import { layoutViewport, type LayoutRow, type RenderSegment } from './layout'
 import { handleKey, type KeyContext } from './keys'
 import { adjustFirstLine, centerOnCursor } from './viewport'
+import { tableAt } from './table-mode'
 import { Autosaver, type SaveState } from './doc'
 
 function SegmentView({ seg }: { seg: RenderSegment }): React.JSX.Element {
@@ -48,19 +49,24 @@ function StatusBar({
   lineNo,
   colNo,
   lineCount,
+  inTable,
 }: {
   path: string | null
   saveState: SaveState
   lineNo: number
   colNo: number
   lineCount: number
+  inTable: boolean
 }): React.JSX.Element {
   const name = path === null ? 'untitled.md' : (path.replace(/\\/g, '/').split('/').pop() ?? 'untitled.md')
   const save = saveState === 'dirty' ? '·未保存' : saveState === 'saving' ? '·保存中' : ''
+  const hints = inTable
+    ? ' [表格] Tab/⏎ 移动 · Alt+R 加行 · Alt+N 加列 · Alt+D 删行 · Alt+X 删列 · Alt+A 对齐 · Alt+T 删表'
+    : ' ^S 保存 · ^Q 退出'
   return (
     <Box>
       <Text inverse>{` ${name}${save} `}</Text>
-      <Text dimColor>{` Ln ${lineNo}, Col ${colNo} · ${lineCount} 行 · ^S 保存 · ^Q 退出 `}</Text>
+      <Text dimColor>{` Ln ${lineNo}, Col ${colNo} · ${lineCount} 行 ·${hints} `}</Text>
     </Box>
   )
 }
@@ -157,6 +163,14 @@ export function TuiApp({ session }: { session: EditorSession }): React.JSX.Eleme
   const doc = state.doc
   const main = state.selection.main
   const cursorLine = doc.lineAt(main.head)
+  // 表格网格编辑模式指示（底部上下文栏）
+  const inTable = useMemo(() => {
+    try {
+      return tableAt(state, main.head) !== null
+    } catch {
+      return false
+    }
+  }, [state, main.head])
 
   const layout = layoutViewport(state, {
     width: size.w,
@@ -185,6 +199,7 @@ export function TuiApp({ session }: { session: EditorSession }): React.JSX.Eleme
         lineNo={cursorLine.number}
         colNo={colNo}
         lineCount={doc.lines}
+        inTable={inTable}
       />
     </Box>
   )
