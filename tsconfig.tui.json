@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM"],
+    "jsx": "react-jsx",
+    "types": ["node"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "paths": {
+      "@yupmark/live-cm/*": ["./packages/live-cm/src/*"],
+      "@shared/*": ["./src/shared/*"]
+    }
+  },
+  "include": [
+    "packages/tui/src/**/*.ts",
+    "packages/tui/src/**/*.tsx",
+    "packages/tui/tests/**/*.ts",
+    "packages/tui/tests/**/*.tsx"
+  ]
+}

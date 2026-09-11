@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { syntaxTree } from '@codemirror/language'
-import { createEditorState } from '@renderer/editor/extensions'
+import { createEditorState } from '@yupmark/live-cm/extensions'
 
 describe('editor state (lang-markdown 接线验证)', () => {
   it('解析 ATX 标题节点', () => {

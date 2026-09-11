@@ -1,0 +1,17 @@
+{
+  "name": "yupmark-tui",
+  "version": "0.2.0",
+  "description": "YupMark in the terminal — Typora-style live-render Markdown TUI editor powered by @yupmark/live-cm",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "smoke": "node scripts/headless-smoke.mjs",
+    "start": "node scripts/run-cli.mjs"
+  },
+  "dependencies": {
+    "@yupmark/live-cm": "*",
+    "ink": "^6.7.0",
+    "react": "^19.2.8"
+  }
+}

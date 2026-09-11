@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { basename } from '@shared/paths'
+import { basename } from '@yupmark/live-cm/paths'
 import { useWorkspaceStore } from './store/workspaceStore'
 
 /** 多标签栏：点击切换，中键/×关闭 */

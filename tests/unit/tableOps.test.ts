@@ -7,7 +7,7 @@ import {
   setColumnAlign,
   splitRow,
   joinRow,
-} from '@renderer/editor/tableOps'
+} from '@yupmark/live-cm/tableOps'
 
 const base = ['| 功能 | 说明 | 备注 |', '| --- | --- | --- |', '| 截图 | save | 保存 |', '| 录屏 | record | 录制 |']
 

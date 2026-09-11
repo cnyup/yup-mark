@@ -2,7 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
-import { baseExtensions } from '@renderer/editor/extensions'
+import { baseExtensions } from '@yupmark/live-cm/extensions'
 import { useWorkspaceStore } from '@renderer/app/store/workspaceStore'
 
 function freshView(): EditorView {

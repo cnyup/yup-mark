@@ -4,7 +4,7 @@
  */
 import { create } from 'zustand'
 import i18next from 'i18next'
-import { setMermaidTheme } from '../../editor/widgets'
+import { setMermaidTheme } from '@yupmark/live-cm/widgets'
 import {
   persistSettings,
   readPersisted,

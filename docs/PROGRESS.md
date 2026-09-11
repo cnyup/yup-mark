@@ -1,6 +1,6 @@
-# YupMark 开发进度（截至 2026-09-10）
+# YupMark 开发进度（截至 2026-09-11）
 
-> 里程碑定义见 [DESIGN.md §7](./DESIGN.md)。规范见 [CONVENTIONS.md](./CONVENTIONS.md)，待办见 [ROADMAP.md](./ROADMAP.md)。
+> 里程碑定义见 [DESIGN.md §7](./DESIGN.md)。规范见 [CONVENTIONS.md](./CONVENTIONS.md)，待办见 [ROADMAP.md](./ROADMAP.md)（双轨制）。TUI 版设计见 [TUI.md](./TUI.md)。
 
 ## 1. 里程碑总览
 
@@ -13,11 +13,11 @@
 | M4 主题与打磨 | 主题系统、i18n、设置页、快捷键对齐、视图三件套 | ✅ 完成（超出原范围，含大量 Typora 对齐打磨） |
 | M5 开源发布 | 打包、自动更新、README/贡献指南、发布 | ⬜ 未开始 |
 
-**验证基线**：typecheck 0 错误 · eslint 干净 · vitest 19 文件 / 134 用例全绿。
+**验证基线**：typecheck 0 错误（node/web/tui 三 project）· eslint 干净 · vitest 21 文件 / 144 用例全绿。
 
 ## 2. 已完成功能清单
 
-### 编辑器内核（src/renderer/editor/）
+### 编辑器内核（packages/live-cm/src/，MT0 前位于 src/renderer/editor/）
 - 块级实时渲染（rules.ts）：标题/粗斜/删除线/行内代码/链接/图片/引用/HR/列表/任务列表/表格/数学/mermaid 全覆盖
 - **Typora 式渲染态编辑**（2026-09-09 定型）：样式常驻 + 语法标记就近淡显（`cm-mark-dim`），列表符号/复选框始终渲染，IME 组合冻结纯源码
 - 表格：Typora 网格样式（浅灰表头+斑马纹）、上方悬浮工具栏（行列增删/对齐/删表）、单元格 contenteditable 编辑、键盘导航（Tab/Enter/方向键/⇧⌘⌫ 删行）、空行单元格合成、TableHeader 新版结构兼容
@@ -67,3 +67,16 @@
 3. 快捷键双平台对齐 + 三个菜单加速键冲突修复（⌘\、⌘=、⌘0）
 4. 视图三件套 + 模式徽章 + 状态订阅（subscribeViewModes）
 5. 主题系统 CSS 真正落地（此前设置里可选但无样式效果）
+
+## 6. 2026-09-11 TUI 立项（设计定稿 + 可行性验证）
+
+- **决策**（ADR D13–D17，用户逐项敲定）：Node.js + Ink / Typora 式单栏 / 本仓库 monorepo / 特殊块务实降级 / Typora 键位映射；v1 功能范围 = 桌面现有功能全部上 TUI（特殊块按降级策略）。设计文档 [TUI.md](./TUI.md)，ROADMAP 改双轨制。
+- **可行性已验证**：新增 `tests/unit/headless-node.test.ts`（纯 Node 无 DOM 环境，`// @vitest-environment node`）——`@codemirror/view` 的 `Decoration` 与 `buildLiveDecorations` 完整跑通（非活跃块隐藏 `# `/`> `/`**`、活跃块淡显、mark 产出），TUI 复用内核的核心前提成立。
+- **开发环境**：本机（Windows）winget 安装 Node v24.19.0 LTS；npm allow-scripts 需批准 esbuild postinstall（平台二进制）；验证流水线全绿（typecheck / lint / 138 用例）。
+
+## 7. MT0 完成（2026-09-11，monorepo 抽包 + TUI 骨架）
+
+- **monorepo**：npm workspaces；`src/renderer/editor`（20 文件）→ `packages/live-cm`（包名 `@yupmark/live-cm`，exports `./src/*.ts` 直出 TS 源）；桌面 app/测试全部改经 `@yupmark/live-cm/*` 导入；`@shared/paths` 归入内核（`live-cm/paths.ts`，app 反向引用内核）。
+- **TUI 包** `packages/tui`（`yupmark-tui`）：`src/preview.ts`（无头装配器：装饰 → Span 结构，EditorSurface 种子）· `src/state.ts`（docState 解析器工厂，GFM+数学与内核对齐）· `src/cli.tsx`（Ink 备用屏静态预览，q/Esc/Ctrl+C 退出；非 TTY 纯文本输出供 CI）· `scripts/headless-smoke.mjs`（esbuild 打包内核→无 DOM 运行，输出 17 项装饰区间）。
+- **验证**：typecheck 三 project / lint / **144 用例**（+6 TUI preview 单测）/ 桌面生产构建产物 hash 与迁移前一致（零逻辑改动佐证）；冒烟与 CLI 非 TTY 运行均通过。偏差与发现记录见 TUI.md §12。
+- **下一步**：MT1 EditorSurface 编辑面（光标/输入/滚动/CJK/自动保存）。

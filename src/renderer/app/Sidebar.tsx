@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { basename, dirname } from '@shared/paths'
+import { basename, dirname } from '@yupmark/live-cm/paths'
 import type { FileSortMode } from '@shared/ipc'
 import { useWorkspaceStore } from './store/workspaceStore'
 import { FileTree } from './FileTree'

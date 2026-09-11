@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { basename } from '@shared/paths'
+import { basename } from '@yupmark/live-cm/paths'
 import { useWorkspaceStore } from './store/workspaceStore'
 
 /** 外部修改 vs 本地未保存 的冲突三选一（设计 §4.3；"对比"视图后置） */

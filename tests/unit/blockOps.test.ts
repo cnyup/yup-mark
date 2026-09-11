@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clearInlineMarks, lineKind, shiftHeading, transformLine, transformLines } from '@renderer/editor/blockOps'
+import { clearInlineMarks, lineKind, shiftHeading, transformLine, transformLines } from '@yupmark/live-cm/blockOps'
 
 describe('lineKind', () => {
   it('识别各类前缀', () => {

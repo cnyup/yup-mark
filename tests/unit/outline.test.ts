@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createEditorState } from '@renderer/editor/extensions'
-import { activeOutlineItem, extractOutline } from '@renderer/editor/outline'
+import { createEditorState } from '@yupmark/live-cm/extensions'
+import { activeOutlineItem, extractOutline } from '@yupmark/live-cm/outline'
 
 describe('extractOutline 大纲提取', () => {
   const doc = ['# One', '', 'text', '', '## Two', '', '### Three', '', '普通段落', '', 'Setext H1', '=====', '', 'end'].join('\n')

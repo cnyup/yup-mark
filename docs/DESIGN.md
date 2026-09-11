@@ -48,6 +48,11 @@ Typora 的本质：文档由"块"（block）组成；**所有块始终渲染为�
 | D10 | 代码高亮 | 编辑态 CM6 原生高亮，导出/复制场景动态加载 Shiki | 见 §4.2.1 |
 | D11 | 开源协议 | MIT | 依赖全兼容 |
 | D12 | 自动更新 | electron-updater + GitHub Releases | M5 启用，含 macOS 公证流程 |
+| D13 | TUI 版本技术栈 | Node.js + Ink，CM6 状态层无头复用 | 2026-09-11 定，详见 [TUI.md](./TUI.md) |
+| D14 | TUI 交互模型 | Typora 式单栏（渲染态编辑，光标所在块显源码） | 与桌面 §4.1.2 同源哲学 |
+| D15 | TUI 代码位置 | 本仓库 monorepo（npm workspaces） | 内核抽 `packages/live-cm` + `packages/tui` |
+| D16 | TUI 特殊块降级 | 数学 Unicode 近似、mermaid/图片占位框、光标进入显源码 | 终端图形协议真渲染列 v2 |
+| D17 | TUI 键位体系 | Typora 桌面键位映射（终端键域内，冲突键找最近替代并公示） | vim 层列 v2 |
 
 ---
 
@@ -90,7 +95,7 @@ Typora 的本质：文档由"块"（block）组成；**所有块始终渲染为�
 
 ### 3.2 核心资产独立性
 
-`src/renderer/editor`（对外的包名 `@yupmark/live-cm`）必须是**纯 TypeScript、零 React、零 Electron 依赖**的可独立测试模块：
+`packages/live-cm`（包名 `@yupmark/live-cm`）必须是**纯 TypeScript、零 React、零 Electron、零 Ink/Node 专属 API**的可独立测试模块：
 
 - 可以在纯浏览器环境跑单测和 Storybook 式 playground；
 - 未来可单独发包，成为项目最核心的开源卖点（一个 CM6 版的 Typora 引擎）；
@@ -243,24 +248,27 @@ Typora 主题 = 一份用户 CSS。我们的兼容策略（v0.1 边界）：
 ## 6. 目录结构
 
 ```
-YupMark/
-├── package.json / electron-vite 配置
-├── docs/                    # DESIGN / CONVENTIONS / PROGRESS / ROADMAP / theme-compat
+YupMark/                        # npm workspaces 根
+├── package.json / electron-vite 配置 / tsconfig.{node,web,tui}.json
+├── docs/                    # DESIGN / CONVENTIONS / PROGRESS / ROADMAP / theme-compat / TUI
+├── packages/
+│   ├── live-cm/             # 编辑器内核 @yupmark/live-cm（纯 TS、桌面/TUI 共享：
+│   │                        #   engine / rules / blocks / widgets / viewModes / commands /
+│   │                        #   contextMenu / tableOps / blockOps / platform / paths / …）
+│   └── tui/                 # yupmark-tui（Ink 壳 + 无头装配器 preview / state / cli + 冒烟脚本）
 ├── release/                 # electron-builder 输出（不入库）
 ├── samples/                 # 体验文档
 ├── src/
 │   ├── main/                # 主进程：index / menu / fileService / workspaceService
 │   ├── preload/index.ts     # contextBridge 类型化 API
-│   ├── shared/              # ipc 协议类型 / paths / stats / fsutils（两侧共用）
+│   ├── shared/              # ipc 协议类型 / stats / fsutils（路径工具已归 live-cm）
 │   └── renderer/
 │       ├── app/             # React 外壳（App/EditorHost/Sidebar/TabBar/StatusBar/
 │       │                    #   SettingsModal/… + store/{workspaceStore,appSettings}）
-│       ├── editor/          # 编辑器内核（纯 TS、扁平结构：engine / rules / blocks /
-│       │                    #   widgets / viewModes / commands / contextMenu /
-│       │                    #   tableOps / blockOps / platform / …）
 │       ├── assets/base.css  # 全部样式 + 七套主题变量块
 │       └── i18n/            # zh-CN / en-US
-└── tests/unit/              # vitest + jsdom（e2e 未建）
+├── tests/unit/              # vitest + jsdom（含 headless-node 无头冒烟）
+└── packages/tui/tests/      # TUI 无头装配器单测
 ```
 
 ## 7. 里程碑

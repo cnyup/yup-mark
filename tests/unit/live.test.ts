@@ -3,12 +3,12 @@ import { EditorSelection } from '@codemirror/state'
 import { Decoration } from '@codemirror/view'
 import type { Range } from '@codemirror/state'
 import type { WidgetType } from '@codemirror/view'
-import { createEditorState } from '@renderer/editor/extensions'
-import { buildLiveDecorations } from '@renderer/editor/rules'
-import { computeActiveSet, findGapAnchor, nearestBlock, topLevelBlocks } from '@renderer/editor/blocks'
-import { CheckboxWidget, HrWidget, ImageWidget } from '@renderer/editor/widgets'
-import { dirname, resolveRelPath } from '@shared/paths'
-import { resolveImgSrc } from '@renderer/editor/engine-img'
+import { createEditorState } from '@yupmark/live-cm/extensions'
+import { buildLiveDecorations } from '@yupmark/live-cm/rules'
+import { computeActiveSet, findGapAnchor, nearestBlock, topLevelBlocks } from '@yupmark/live-cm/blocks'
+import { CheckboxWidget, HrWidget, ImageWidget } from '@yupmark/live-cm/widgets'
+import { dirname, resolveRelPath } from '@yupmark/live-cm/paths'
+import { resolveImgSrc } from '@yupmark/live-cm/engine-img'
 
 /** 把隐藏装饰（无 class 无 widget 的 replace）对应的文档文本抽出来，便于断言"哪些符号被隐藏" */
 function hiddenTexts(decos: Range<Decoration>[], doc: string): string[] {

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
 import { EditorView } from '@codemirror/view'
-import { createEditorState } from '@renderer/editor/extensions'
-import { enterNeighborTable } from '@renderer/editor/engine'
+import { createEditorState } from '@yupmark/live-cm/extensions'
+import { enterNeighborTable } from '@yupmark/live-cm/engine'
 
 /** 键盘 ↑/↓ 进出表格（含全空数据行的表格） */
 describe('表格键盘导航', () => {

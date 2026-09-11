@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
-import { baseExtensions } from '@renderer/editor/extensions'
+import { baseExtensions } from '@yupmark/live-cm/extensions'
 import {
   focusModeField,
   setFocusMode,
@@ -10,7 +10,7 @@ import {
   setTypewriterMode,
   sourceModeField,
   typewriterModeField,
-} from '@renderer/editor/viewModes'
+} from '@yupmark/live-cm/viewModes'
 
 function mount(doc: string, anchor: number): { host: HTMLDivElement; view: EditorView } {
   const host = document.createElement('div')

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { EditorView } from '@codemirror/view'
-import { basename } from '@shared/paths'
+import { basename } from '@yupmark/live-cm/paths'
 import { useWorkspaceStore } from './store/workspaceStore'
 import { IconPanel } from './icons'
 import {
@@ -10,7 +10,7 @@ import {
   toggleSourceMode,
   toggleTypewriterMode,
   type ViewModesState,
-} from '../editor/viewModes'
+} from '@yupmark/live-cm/viewModes'
 
 export function StatusBar() {
   const { t } = useTranslation()

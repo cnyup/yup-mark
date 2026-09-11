@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
 import { EditorView } from '@codemirror/view'
-import { createEditorState } from '@renderer/editor/extensions'
+import { createEditorState } from '@yupmark/live-cm/extensions'
 
 describe('任务列表复选框点击切换', () => {
   it('点击 [ ] → 源码变 [x]，再点击还原', async () => {

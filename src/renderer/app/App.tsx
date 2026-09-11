@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { MenuEvent } from '@shared/ipc'
-import { basename } from '@shared/paths'
+import { basename } from '@yupmark/live-cm/paths'
 import { EditorHost } from './EditorHost'
 import { Sidebar } from './Sidebar'
 import { TabBar } from './TabBar'
@@ -9,8 +9,8 @@ import { StatusBar } from './StatusBar'
 import { ConflictModal } from './ConflictModal'
 import { SettingsModal } from './SettingsModal'
 import { useWorkspaceStore } from './store/workspaceStore'
-import { IS_MAC } from '../editor/platform'
-import { toggleFocusMode, toggleSourceMode, toggleTypewriterMode } from '../editor/viewModes'
+import { IS_MAC } from '@yupmark/live-cm/platform'
+import { toggleFocusMode, toggleSourceMode, toggleTypewriterMode } from '@yupmark/live-cm/viewModes'
 
 /** 会话恢复只跑一次（StrictMode 双挂载/热重载防护） */
 let sessionRestored = false

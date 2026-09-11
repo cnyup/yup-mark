@@ -32,13 +32,17 @@ sleep 12; pgrep -f "MacOS/Electron"   # 拿到 pid 即成功
 
 ## 2. 分层规则（违反会破坏架构）
 
+> 2026-09-11（MT0）起为 npm workspaces monorepo：编辑器内核抽为 `packages/live-cm`，
+> TUI 版在 `packages/tui`（设计见 [TUI.md](./TUI.md)）。桌面端经 `@yupmark/live-cm/*` 导入内核。
+
 | 目录 | 职责 | 禁止 |
-|---|---|---|
-| `src/renderer/editor/` | CM6 编辑器内核，纯 TS | **零 React、零 Electron IPC 依赖**（要通知外壳时用 DOM 事件或回调，参考 viewModes 的 subscribe 模式） |
+|------|------|------|
+| `packages/live-cm/src/` | CM6 编辑器内核，纯 TS（桌面/TUI 共享） | **零 React、零 Electron、零 Ink/Node 专属 API**（要通知外壳时用 DOM 事件或回调，参考 viewModes 的 subscribe 模式） |
+| `packages/tui/` | 终端版（Ink 壳 + 无头装配器） | 反向改写内核渲染语义——内核不够用就改内核，桌面端同跑测试 |
 | `src/renderer/app/` | React 外壳（侧栏/标签/状态栏/设置）与 Zustand store | 直接操作 CM 内部 |
 | `src/renderer/i18n/` | zh-CN / en-US 双语键（**两文件必须同步加**） | |
 | `src/main/` | 主进程：菜单加速键、文件系统、剪贴板、工作区 | |
-| `src/shared/` | 进程间契约：IPC 类型、路径/统计纯函数 | 引用 renderer 或 main 专属类型 |
+| `src/shared/` | 进程间契约：IPC 类型、统计纯函数（路径工具已归内核 `live-cm/paths`） | 引用 renderer 或 main 专属类型 |
 | `src/preload/` | contextBridge 暴露 `window.yupmark` | |
 
 ## 3. 编辑器内核核心模型（改动前必读）

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { EditorView } from '@codemirror/view'
 import { useTranslation } from 'react-i18next'
-import { activeOutlineItem } from '../editor/outline'
+import { activeOutlineItem } from '@yupmark/live-cm/outline'
 import { useWorkspaceStore } from './store/workspaceStore'
 
 /** 大纲面板：当前文档标题树，点击跳转，光标所在章节高亮 */

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
-import { renderInlineMarkdown } from '@renderer/editor/inlineRender'
-import { alignFromDelimiter } from '@renderer/editor/table'
+import { renderInlineMarkdown } from '@yupmark/live-cm/inlineRender'
+import { alignFromDelimiter } from '@yupmark/live-cm/table'
 
 describe('renderInlineMarkdown 单元格行内渲染', () => {
   function render(text: string): HTMLElement {

@@ -6,12 +6,12 @@ import { create } from 'zustand'
 import type { EditorState, Extension } from '@codemirror/state'
 import type { FileEntry, FsEventData, SessionState , FileSortMode } from '@shared/ipc'
 import { countStats, type TextStats } from '@shared/stats'
-import { dirname } from '@shared/paths'
-import { createEditorState } from '../../editor/extensions'
+import { dirname } from '@yupmark/live-cm/paths'
+import { createEditorState } from '@yupmark/live-cm/extensions'
 import { EditorView } from '@codemirror/view'
-import { setDocDir } from '../../editor/engine'
-import { extractOutline, type OutlineItem } from '../../editor/outline'
-import { findGapAnchor } from '../../editor/blocks'
+import { setDocDir } from '@yupmark/live-cm/engine'
+import { extractOutline, type OutlineItem } from '@yupmark/live-cm/outline'
+import { findGapAnchor } from '@yupmark/live-cm/blocks'
 
 const AUTOSAVE_DELAY_MS = 800
 const SESSION_SAVE_DELAY_MS = 1000

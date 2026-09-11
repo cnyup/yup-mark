@@ -15,13 +15,15 @@
     "noEmit": true,
     "paths": {
       "@shared/*": ["./src/shared/*"],
-      "@renderer/*": ["./src/renderer/*"]
+      "@renderer/*": ["./src/renderer/*"],
+      "@yupmark/live-cm/*": ["./packages/live-cm/src/*"]
     }
   },
   "include": [
     "src/renderer/**/*.ts",
     "src/renderer/**/*.tsx",
     "src/shared/**/*.ts",
+    "packages/live-cm/src/**/*.ts",
     "tests/**/*.ts",
     "tests/**/*.tsx"
   ]

@@ -1,0 +1,23 @@
+{
+  "name": "@yupmark/live-cm",
+  "version": "0.2.0",
+  "description": "YupMark editor kernel: Typora-style live-render engine for Markdown on CodeMirror 6. Pure TS, DOM-free at the state layer — consumable by Electron renderer and terminal (Ink) alike.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.11.0",
+    "@codemirror/lang-markdown": "^6.5.2",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/language-data": "^6.5.2",
+    "@codemirror/state": "^6.7.4",
+    "@codemirror/view": "^6.43.11",
+    "@lezer/common": "^1.2.3",
+    "@lezer/highlight": "^1.2.3",
+    "@lezer/markdown": "^1.4.2",
+    "katex": "^0.18.7"
+  }
+}

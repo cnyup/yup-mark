@@ -3,7 +3,7 @@
  * - 绝对协议地址（http/https/data/blob）原样返回
  * - 相对路径 → 基于文档目录解析 → 自定义协议 yup-file://（由主进程 protocol.handle 提供本地文件）
  */
-import { resolveRelPath } from '@shared/paths'
+import { resolveRelPath } from './paths'
 
 export function resolveImgSrc(src: string, docDir: string | null): string {
   if (/^(https?:|data:|blob:|yup-file:)/i.test(src)) return src

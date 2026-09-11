@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
-import { baseExtensions } from '@renderer/editor/extensions'
+import { baseExtensions } from '@yupmark/live-cm/extensions'
 
 /** view 级冒烟：装饰管线经过 EditorView 落到真实 DOM（StateField→decorations facet→DOM） */
 describe('live render view 集成', () => {

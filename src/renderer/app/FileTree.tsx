@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { FileEntry, FileSortMode } from '@shared/ipc'
-import { basename } from '@shared/paths'
+import { basename } from '@yupmark/live-cm/paths'
 import { useWorkspaceStore } from './store/workspaceStore'
 import {
   filterFlat,

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
 import { EditorView } from '@codemirror/view'
-import { createEditorState } from '@renderer/editor/extensions'
+import { createEditorState } from '@yupmark/live-cm/extensions'
 
 /**
  * 回归：GFM 解析器对全空单元格行（| | |）不产出 TableCell，
