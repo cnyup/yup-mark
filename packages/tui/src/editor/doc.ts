@@ -42,6 +42,11 @@ export class Autosaver {
     }, AUTOSAVE_DELAY_MS)
   }
 
+  /** 已保存基线内容（外部修改检测用，MT4） */
+  savedContent(): string {
+    return this.lastSaved
+  }
+
   /** 立即落盘；成功返回 true */
   save(): boolean {
     if (this.path === null) return true

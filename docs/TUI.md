@@ -181,7 +181,7 @@ Ink useInput → keys.ts 翻译 → view-less 事务调度
 | **MT1 编辑面 MVP** ✅（2026-09-11） | EditorSurface：单栏渲染态（基础语法全表 §5 上半）+ 光标所在块显源码 + CJK 宽字符安全 + 自动保存 + 打开/编辑/保存单文件 | 中文 10k 行文档滚动/输入流畅（实测每键 14ms，见 §12 备忘）；samples/ 渲染经 CLI 预览验证；IME 组合输入待真机手验 |
 | **MT2 高级语法** ✅（2026-09-11，**表格网格编辑模式已按方案 A 落地**） | 表格 box 网格（渲染 + 单元格导航编辑 + 底部上下文栏）+ 数学 Unicode 近似 + mermaid/图片占位框 + 代码块 ANSI 高亮 | samples/ 黄金样例经 CLI 渲染验证（含近似失败降级路径）；表格/数学/网格/布局共 42 用例 |
 | **MT3 壳与效率** ✅（2026-09-11，a+b 两单元） | MT3a：多标签 + 查找替换 + 大纲 + 视图三件套；MT3b：文件树（扫描/展开/新建）+ 上下文菜单 | 查找替换/大纲/三件套/文件树/菜单共 16 用例 + workspace 冒烟；视图键位因终端无 F 键改 Alt 系（§12c） |
-| **MT4 主题与收口** | 7 主题调色板 + i18n + 会话恢复 + 外部修改检测（三选一弹窗）+ 设置栏 | 七主题目测无破相；外部修改流程与桌面一致 |
+| **MT4 主题与收口** ✅（2026-09-11） | 7 主题调色板 + i18n + 会话恢复 + 外部修改检测（二选一弹窗）+ 设置栏 | 7 主题 token 全解析单测（同源桌面主色）；外部修改判定纯函数 4 路径；267 用例全绿 |
 | **MT5 分发** | npm 包 `yupmark-tui`（bin `yupmark`）+ README 双语 TUI 章节 + CI 加 TUI 构建矩阵（Linux/macOS/Windows） | `npx yupmark-tui` 三平台开箱即用；单文件二进制（bun/pkg）列 v2 |
 
 依赖顺序 MT0→MT5；每个 MT 结束更新 PROGRESS.md。桌面线 ROADMAP（⌘F、列表 Tab 等）与 MT 系列共享内核改动（列表 Tab 嵌坐在 blockOps 上，两端同一次实现）。
@@ -252,6 +252,15 @@ Ink useInput → keys.ts 翻译 → view-less 事务调度
 1. **文件树**：`filetree.ts` 纯函数（递归扫描只收 md/markdown、忽略 node_modules/.git/release 等、目录排前按名排序；展开集合扁平化）。`yupmark <目录>` 进工作区模式；`Alt+E` 开关树面板（开时重扫）；模态导航 j/k/⏎/h/l 折叠展开/r 刷新/n 新建（输入行 → 写盘 → 重扫 → 打开标签）；打开文件去重（已开则激活，激活标签 cyan 标记）。
 2. **上下文菜单**：`Alt+M` 单层菜单（桌面三段布局的 TUI 简化）：1-4 格式包裹（粗体/斜体/删除线/行内代码，选区包裹/空标记对）、5-8 插入（3×3 表格模板/代码块/HR/任务列表）。动作全部为纯事务（`context-menu.ts`）。
 3. 验证基线：**34 文件 / 255 用例**。
+
+## 12e. MT4 落地备忘（2026-09-11）
+
+1. **颜色 token 体系**：SpanStyle.color 改为主题 token（h1-h6/link/codeInline/math/tableActive/searchHit/accent/syntax*），SegmentView 渲染末端经 theme.resolveColor 解析为 truecolor hex；未识别值透传（兼容原始 hex）。7 套调色板与桌面 CSS 变量同源（yup 主色 #d63384 等，自 themes/*.css 提取）；亮色主题透明跟随终端背景，暗色（github-dark/dracula）自绘编辑区背景。
+2. **设置栏**：Alt+,（对齐桌面 ⌘, 语义）；主题 ←/→ 循环 7 套、语言 zh/en 切换；即改即生效（themeTick 强制重绘）+ 立即持久化。
+3. **会话恢复**：~/.config/yupmark/tui.json（openTabs/rootDir/theme/lang）；cli 参数优先级：显式参数 > 上次会话 > 空白示例；标签变化与进程退出均落盘。
+4. **外部修改检测**：活动标签 mtime 轮询（1.5s）+ judge 纯函数四判定（none/reload/conflict/deleted）——本地干净→静默重载（整文档替换事务保 undo），有本地修改→二选一弹窗（k 保留我的=立即落盘覆盖 / l 加载磁盘版 / Esc 稍后，按 mtime 防重复弹）。桌面的"对比"视图同为 P1 待办，TUI 二选一与桌面三选一其余两项对齐。
+5. **i18n**：TUI 自有键集（与桌面键集独立——界面结构不同），LANG 环境探测 + 设置覆盖；上下文菜单标签改键引用。
+6. 验证基线：**35 文件 / 267 用例**；10.9ms@10k 行。
 
 ## 13. 与既有文档的关系
 

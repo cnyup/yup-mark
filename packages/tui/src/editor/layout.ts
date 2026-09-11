@@ -137,14 +137,14 @@ const CODE_HIGHLIGHTER: Highlighter = tagHighlighter([
 ])
 
 const CODE_CLASS_STYLE: Record<string, SpanStyle> = {
-  k: { color: 'magenta' },
-  s: { color: 'green' },
-  n: { color: 'yellow' },
-  c: { color: 'gray', italic: true },
-  t: { color: 'cyan' },
-  f: { color: 'blue' },
-  a: { color: 'cyan' },
-  g: { color: 'green' },
+  k: { color: 'syntaxKeyword' },
+  s: { color: 'syntaxString' },
+  n: { color: 'syntaxNumber' },
+  c: { color: 'syntaxComment', italic: true },
+  t: { color: 'syntaxType' },
+  f: { color: 'syntaxFunction' },
+  a: { color: 'syntaxAttr' },
+  g: { color: 'syntaxTag' },
 }
 
 interface CodeToken {
@@ -408,7 +408,7 @@ function computeViewport(state: EditorState, opts: LayoutOptions): ViewportLayou
           ...c,
           style: hit.current
             ? { ...c.style, inverse: true }
-            : { ...c.style, underline: true, color: c.style.color ?? 'yellow' },
+            : { ...c.style, underline: true, color: c.style.color ?? 'searchHit' },
         }
       }
     }

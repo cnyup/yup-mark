@@ -75,10 +75,10 @@ describe('上下文菜单动作', () => {
     expect(s.doc.split('\n')).toHaveLength(5)
   })
 
-  it('每个动作都有键与标签', () => {
+  it('每个动作都有键与文案键', () => {
     for (const a of MENU_ACTIONS) {
       expect(a.key).toMatch(/^[0-9]$/)
-      expect(a.label.length).toBeGreaterThan(0)
+      expect(a.i18nKey.startsWith('menu.')).toBe(true)
     }
   })
 })

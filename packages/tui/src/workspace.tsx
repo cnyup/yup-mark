@@ -30,6 +30,10 @@ import {
 } from '@yupmark/live-cm/viewModes'
 import type { SaveState } from './editor/doc'
 import { textWidth } from './editor/measure'
+import { resolveColor, getTheme, setTheme, PALETTES, THEME_ORDER } from './theme'
+import { t, getLang, setLang } from './i18n'
+import { saveState } from './persist'
+import { readDiskSnapshot, judge, type DiskSnapshot } from './editor/watcher'
 import { flattenTree, rootLabel, scanTree, type FlatNode, type TreeNode } from './filetree'
 import { MENU_ACTIONS } from './editor/context-menu'
 import { loadFile } from './editor/doc'
@@ -65,7 +69,7 @@ function TabBar({
   dirtyIds: Set<number>
   width: number
 }): React.JSX.Element {
-  const HINT = ' Alt+]/[ 切换 · Alt+W 关闭'
+  const HINT = t('tab.switch')
   const budget = Math.max(6, width - textWidth(HINT) - 2)
   const per = Math.max(4, Math.floor(budget / tabs.length))
   return (
@@ -102,17 +106,17 @@ function SearchBar({ state, matchLabel }: { state: SearchState; matchLabel: stri
   return (
     <Box flexDirection="column">
       <Box>
-        <Text inverse>{state.replaceMode ? ' 查找 ' : ' 查找 ' }</Text>
-        <Text color="green">{state.query}</Text>
+        <Text inverse>{t('search.find')}</Text>
+        <Text color={resolveColor("accent") ?? "green"}>{state.query}</Text>
         <Text inverse>{state.focusReplace ? ' ' : ''}</Text>
-        <Text dimColor>{`  ${matchLabel} · ⏎ 下一 · ⇧⏎ 上一 · Esc 关闭`}</Text>
+        <Text dimColor>{`  ${matchLabel} · ${t('search.next')}`}</Text>
       </Box>
       {state.replaceMode ? (
         <Box>
-          <Text inverse>{' 替换 '}</Text>
-          <Text color="yellow">{state.replacement}</Text>
+          <Text inverse>{t('search.replace')}</Text>
+          <Text color={resolveColor("searchHit") ?? "yellow"}>{state.replacement}</Text>
           <Text inverse>{state.focusReplace ? ' ' : ''}</Text>
-          <Text dimColor>{' Alt+R 替换当前 · Alt+A 全部 · Tab 切换焦点'}</Text>
+          <Text dimColor>{` ${t('search.actions')}`}</Text>
         </Box>
       ) : null}
     </Box>
@@ -141,7 +145,7 @@ function OutlinePanel({
   const start = Math.max(0, Math.min(cursorIdx - Math.floor(height / 2), Math.max(0, items.length - height)))
   const visible = items.slice(start, start + height)
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="cyan" width={width} height={height}>
+    <Box flexDirection="column" borderStyle="single" borderColor={resolveColor("accent") ?? "cyan"} width={width} height={height}>
       {visible.map((it, i) => {
         const idx = start + i
         const text = `${'  '.repeat(Math.max(0, it.level - 1))}${it.text}`.slice(0, width - 4)
@@ -152,7 +156,7 @@ function OutlinePanel({
             {selected ? (
               <Text inverse>{` ${text}`}</Text>
             ) : cursorHere ? (
-              <Text color="cyan">{` ${text}`}</Text>
+              <Text color={resolveColor("accent")}>{` ${text}`}</Text>
             ) : (
               <Text dimColor>{` ${text}`}</Text>
             )}
@@ -191,9 +195,9 @@ function FileTreePanel({
   const start = Math.max(0, Math.min(cursorIdx - Math.floor(height / 2), Math.max(0, flat.length - height)))
   const visible = flat.slice(start, start + height)
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="green" width={width} height={height}>
+    <Box flexDirection="column" borderStyle="single" borderColor={resolveColor("accent") ?? "green"} width={width} height={height}>
       <Box height={1}>
-        <Text bold color="green">{` ${rootName}`}</Text>
+        <Text bold color={resolveColor("accent") ?? "green"}>{` ${rootName}`}</Text>
       </Box>
       {visible.map((f, i) => {
         const idx = start + i
@@ -207,7 +211,7 @@ function FileTreePanel({
             {selected ? (
               <Text inverse>{` ${label}`}</Text>
             ) : isActive ? (
-              <Text color="cyan">{` ${label}`}</Text>
+              <Text color={resolveColor("accent")}>{` ${label}`}</Text>
             ) : n.type === 'dir' ? (
               <Text bold>{` ${label}`}</Text>
             ) : (
@@ -218,12 +222,12 @@ function FileTreePanel({
       })}
       {newFile?.active ? (
         <Box height={1}>
-          <Text color="green">{` + ${newFile.name}`}</Text>
+          <Text color={resolveColor("accent") ?? "green"}>{` + ${newFile.name}`}</Text>
           <Text inverse>{' '}</Text>
         </Box>
       ) : null}
       <Box height={1}>
-        <Text dimColor>{' ⏎打开 · h/l 折叠 · n新建 · r刷新'}</Text>
+        <Text dimColor>{t('tree.header')}</Text>
       </Box>
     </Box>
   )
@@ -235,17 +239,70 @@ function FileTreePanel({
 
 function ContextMenu(): React.JSX.Element {
   return (
-    <Box flexDirection="column" borderStyle="round" borderColor="magenta" paddingX={1}>
-      <Text bold color="magenta">
-        {' 插入与格式 '}
+    <Box
+      flexDirection="column"
+      borderStyle="round"
+      borderColor={resolveColor('accent') ?? 'magenta'}
+      paddingX={1}
+    >
+      <Text bold color={resolveColor('accent') ?? 'magenta'}>
+        {t('menu.title')}
       </Text>
       {MENU_ACTIONS.map((a) => (
         <Box key={a.key} height={1}>
-          <Text color="yellow">{` ${a.key} `}</Text>
-          <Text>{` ${a.label}`}</Text>
+          <Text color={resolveColor('searchHit') ?? 'yellow'}>{` ${a.key} `}</Text>
+          <Text>{` ${t(a.i18nKey)}`}</Text>
         </Box>
       ))}
-      <Text dimColor>{' Esc 关闭'}</Text>
+      <Text dimColor>{t('menu.close')}</Text>
+    </Box>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// 设置栏（MT4：主题 7 套 + 语言）
+// ---------------------------------------------------------------------------
+
+function SettingsBar({ cursor }: { cursor: number }): React.JSX.Element {
+  const rows: { label: string; value: string }[] = [
+    { label: t('settings.theme'), value: `${PALETTES[getTheme()].label} (${THEME_ORDER.indexOf(getTheme()) + 1}/${THEME_ORDER.length})` },
+    { label: t('settings.lang'), value: getLang() },
+  ]
+  return (
+    <Box flexDirection="column" borderStyle="round" borderColor={resolveColor('accent') ?? 'magenta'} paddingX={1}>
+      <Text bold color={resolveColor('accent') ?? 'magenta'}>
+        {t('settings.title')}
+      </Text>
+      {rows.map((r, i) => (
+        <Box key={r.label} height={1}>
+          <Text color={resolveColor('searchHit') ?? 'yellow'}>{` ${i + 1} `}</Text>
+          {cursor === i ? (
+            <Text inverse>{` ${r.label}: ${r.value} `}</Text>
+          ) : (
+            <Text>{` ${r.label}: ${r.value}`}</Text>
+          )}
+        </Box>
+      ))}
+      <Text dimColor>{' ←/→ 或 ⏎ 切换 · Esc 关闭'}</Text>
+    </Box>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// 冲突弹窗（MT4：外部修改三选一的 TUI 二选一形态）
+// ---------------------------------------------------------------------------
+
+function ConflictModal({ path }: { path: string }): React.JSX.Element {
+  const name = path.replace(/\\/g, '/').split('/').pop() ?? path
+  return (
+    <Box flexDirection="column" borderStyle="round" borderColor={resolveColor('searchHit') ?? 'yellow'} paddingX={1}>
+      <Text bold color={resolveColor('searchHit') ?? 'yellow'}>
+        {t('conflict.title')}
+      </Text>
+      <Text dimColor>{` ${t('conflict.file')}: ${name}`}</Text>
+      <Text>{` ${t('conflict.keepMine')}`}</Text>
+      <Text>{` ${t('conflict.loadDisk')}`}</Text>
+      <Text dimColor>{` ${t('conflict.later')}`}</Text>
     </Box>
   )
 }
@@ -285,12 +342,146 @@ export function WorkspaceApp({
   const [newFile, setNewFile] = useState<{ active: boolean; name: string } | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [outlineIdx, setOutlineIdx] = useState(0)
+  // MT4：设置栏 / 冲突弹窗 / 主题重绘触发
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsCursor, setSettingsCursor] = useState(0)
+  const [, setThemeTick] = useState(0)
+  const [conflict, setConflict] = useState<{ tabId: number; path: string; disk: DiskSnapshot } | null>(null)
+  const dismissedMtimeRef = useRef<number>(-1)
+  const baselineRef = useRef<(() => string) | null>(null)
+  const tabRef = useRef<WorkspaceTab | null>(null)
+  const tabsRef = useRef<WorkspaceTab[]>(initialTabs)
+  const flushAllRef = useRef<() => void>(() => {})
 
   const flushersRef = useRef(new Map<number, () => void>())
 
   const activeTab = (): WorkspaceTab | null => tabs.find((t) => t.id === activeId) ?? null
   const tab = activeTab()
   const activeVersion = tab?.session.version ?? 0
+  /** 会话+设置落盘（MT4） */
+  const persistNow = useCallback((): void => {
+    saveState({
+      version: 1,
+      theme: getTheme(),
+      lang: getLang(),
+      openTabs: tabsRef.current.map((x) => x.path).filter((x): x is string => x !== null),
+      rootDir: rootDir ?? null,
+    })
+  }, [rootDir])
+
+  useEffect(() => {
+    tabRef.current = tab
+    tabsRef.current = tabs
+    flushAllRef.current = persistNow
+  })
+
+
+  useEffect(() => {
+    const onExit = (): void => flushAllRef.current()
+    process.on('exit', onExit)
+    return () => {
+      process.off('exit', onExit)
+    }
+  }, [])
+  useEffect(() => {
+    persistNow()
+  }, [tabs, persistNow])
+
+  /** 外部修改轮询（MT4）：活动标签 mtime + 内容判定 */
+  useEffect(() => {
+    const id = setInterval((): void => {
+      if (conflict !== null) return
+      const cur = tabRef.current
+      if (cur === null || cur.path === null) return
+      const disk = readDiskSnapshot(cur.path)
+      if (disk === null) return
+      if (disk.mtimeMs === dismissedMtimeRef.current) return
+      const baseline = baselineRef.current?.() ?? ''
+      const verdict = judge(cur.session.doc, baseline, disk)
+      if (verdict === 'reload') {
+        cur.session.dispatch({
+          changes: { from: 0, to: cur.session.doc.length, insert: disk.content },
+          selection: { anchor: 0 },
+        })
+        dismissedMtimeRef.current = disk.mtimeMs
+      } else if (verdict === 'conflict') {
+        setConflict({ tabId: cur.id, path: cur.path, disk })
+      }
+    }, 1500)
+    return () => clearInterval(id)
+  }, [conflict])
+
+  /** 设置应用（主题/语言）+ 持久化 + 重绘 */
+  const applySettings = useCallback((): void => {
+    setThemeTick((v) => v + 1)
+    persistNow()
+  }, [persistNow])
+
+  const handleConflictInput = useCallback(
+    (input: string, key: Key): void => {
+      const c = conflict
+      if (c === null) return
+      const target = tabsRef.current.find((x) => x.id === c.tabId)
+      if (key.escape) {
+        dismissedMtimeRef.current = c.disk.mtimeMs
+        setConflict(null)
+        return
+      }
+      if (input === 'k') {
+        // 保留我的：立即落盘覆盖磁盘
+        flushersRef.current.get(c.tabId)?.()
+        const disk2 = target?.path != null ? readDiskSnapshot(target.path) : null
+        dismissedMtimeRef.current = disk2?.mtimeMs ?? -1
+        setConflict(null)
+        return
+      }
+      if (input === 'l') {
+        // 加载磁盘版（整文档替换，保留 undo 栈）
+        target?.session.dispatch({
+          changes: { from: 0, to: target.session.doc.length, insert: c.disk.content },
+          selection: { anchor: 0 },
+        })
+        dismissedMtimeRef.current = c.disk.mtimeMs
+        setConflict(null)
+      }
+    },
+    [conflict],
+  )
+
+  const handleSettingsInput = useCallback(
+    (input: string, key: Key): void => {
+      if (key.escape) {
+        setSettingsOpen(false)
+        return
+      }
+      if (key.upArrow || input === 'k') {
+        setSettingsCursor((i) => Math.max(0, i - 1))
+        return
+      }
+      if (key.downArrow || input === 'j') {
+        setSettingsCursor((i) => Math.min(1, i + 1))
+        return
+      }
+      const cycle = (dir: 1 | -1): void => {
+        if (settingsCursor === 0) {
+          const idx = THEME_ORDER.indexOf(getTheme())
+          setTheme(THEME_ORDER[(idx + dir + THEME_ORDER.length) % THEME_ORDER.length] ?? 'yup')
+        } else {
+          setLang(getLang() === 'zh-CN' ? 'en-US' : 'zh-CN')
+        }
+        applySettings()
+      }
+      if (key.leftArrow) {
+        cycle(-1)
+        return
+      }
+      if (key.rightArrow || key.return) {
+        cycle(1)
+        return
+      }
+    },
+    [settingsCursor, applySettings],
+  )
   useSyncExternalStore(
     tab?.session.subscribe ?? (() => () => {}),
     () => `${tab?.session.version ?? 0}:${tab?.id ?? 0}`,
@@ -302,6 +493,10 @@ export function WorkspaceApp({
     if (active !== null) flushersRef.current.set(active.id, flush)
     // registerFlush 在 TuiApp mount 时调用一次，绑定当时的 session
   }, [activeId, tabs]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const registerBaseline = useCallback((fn: () => string) => {
+    baselineRef.current = fn
+  }, [])
 
   const onTabSaveState = useCallback(
     (id: number) => (s: SaveState) => {
@@ -607,10 +802,18 @@ export function WorkspaceApp({
     [activeId, tabs], // eslint-disable-line react-hooks/exhaustive-deps
   )
 
-  const overlayOpen = search.open || outlineOpen || menuOpen || (treeOpen && treeRoot !== null)
+  const overlayOpen =
+    conflict !== null ||
+    settingsOpen ||
+    search.open ||
+    outlineOpen ||
+    menuOpen ||
+    (treeOpen && treeRoot !== null)
   useInput(
     (input: string, key: Key) => {
-      if (search.open) handleSearchInput(input, key)
+      if (conflict !== null) handleConflictInput(input, key)
+      else if (settingsOpen) handleSettingsInput(input, key)
+      else if (search.open) handleSearchInput(input, key)
       else if (menuOpen) handleMenuInput(input, key)
       else if (outlineOpen) handleOutlineInput(input, key)
       else if (treeOpen && treeRoot !== null) handleTreeInput(input, key)
@@ -655,6 +858,9 @@ export function WorkspaceApp({
             return true
           case 'm':
             setMenuOpen((v) => !v)
+            return true
+          case ',':
+            setSettingsOpen((v) => !v)
             return true
           case 'w': {
             closeTab(s.id)
@@ -732,9 +938,12 @@ export function WorkspaceApp({
             bottomOverlayRows={search.open ? (search.replaceMode ? 2 : 1) : 0}
             onSaveState={onTabSaveState(tab.id)}
             registerFlush={registerFlush}
+            registerBaseline={registerBaseline}
           />
         </Box>
         {menuOpen ? <ContextMenu /> : null}
+        {settingsOpen ? <SettingsBar cursor={settingsCursor} /> : null}
+        {conflict !== null ? <ConflictModal path={conflict.path} /> : null}
       </Box>
     </Box>
   )

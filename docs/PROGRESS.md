@@ -13,7 +13,7 @@
 | M4 主题与打磨 | 主题系统、i18n、设置页、快捷键对齐、视图三件套 | ✅ 完成（超出原范围，含大量 Typora 对齐打磨） |
 | M5 开源发布 | 打包、自动更新、README/贡献指南、发布 | ⬜ 未开始 |
 
-**验证基线**：typecheck 0 错误（node/web/tui 三 project）· eslint 干净 · vitest 34 文件 / 255 用例全绿。
+**验证基线**：typecheck 0 错误（node/web/tui 三 project）· eslint 干净 · vitest 35 文件 / 267 用例全绿。
 
 ## 2. 已完成功能清单
 
@@ -103,4 +103,5 @@
 - **视图三件套**：Alt+S/F/P（终端无 F 键，键位变更公示于 TUI.md §12c）；直接 dispatch 内核 StateEffect；源码模式行号槽 + 打字机居中滚动；docState 显式挂载视图字段。
 - **MT3b**：文件树（filetree 扫描/展开纯函数 + Alt+E 模态面板 + n 新建文件 + 打开去重）+ 上下文菜单（Alt+M：格式包裹/插入模板，纯事务）。cli 目录参数进工作区模式。
 - **验证**：typecheck×3 / lint / **255 用例**（+16）；11.7ms@10k 行。
-- **下一步**：MT4（主题/i18n/会话/外部修改）。
+- **MT4 完成（2026-09-11）**：颜色 token 体系 + 7 套调色板（同源桌面主色，暗色自绘背景）· 设置栏 Alt+,（主题/语言，持久化 ~/.config/yupmark/tui.json）· 会话恢复（标签/根目录/设置）· 外部修改检测（mtime 轮询 + judge 四判定：静默重载/二选一冲突弹窗）· i18n（zh/en，LANG 探测）。验证：typecheck×3 / lint 零告警 / **267 用例**（+12）；10.9ms@10k 行。
+- **下一步**：MT5（npm 分发 + CI 三平台矩阵）——TUI 最后一个里程碑。

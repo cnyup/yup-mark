@@ -17,6 +17,8 @@ import { adjustFirstLine, centerOnCursor, typewriterFirstLine } from './viewport
 import { tableAt } from './table-mode'
 import { Autosaver, type SaveState } from './doc'
 import { sourceModeField, focusModeField, typewriterModeField } from '@yupmark/live-cm/viewModes'
+import { resolveColor, resolveBg } from '../theme'
+import { t } from '../i18n'
 
 export interface TuiAppProps {
   session: EditorSession
@@ -36,6 +38,8 @@ export interface TuiAppProps {
   onSaveState?: (state: SaveState) => void
   /** 关闭前 flush（切标签/关标签时） */
   registerFlush?: (flush: () => void) => void
+  /** 已保存基线内容上抛（外部修改检测用，MT4） */
+  registerBaseline?: (fn: () => string) => void
 }
 
 function SegmentView({ seg }: { seg: RenderSegment }): React.JSX.Element {
@@ -48,7 +52,7 @@ function SegmentView({ seg }: { seg: RenderSegment }): React.JSX.Element {
       underline={s.underline}
       strikethrough={s.strikethrough}
       inverse={s.inverse}
-      color={s.color}
+      color={resolveColor(s.color)}
     >
       {seg.text}
     </Text>
@@ -65,6 +69,16 @@ function RowView({ row, gutterWidth }: { row: LayoutRow; gutterWidth: number }):
           <SegmentView key={i} seg={seg} />
         ))}
       </Text>
+    </Box>
+  )
+}
+
+/** 暗色主题铺编辑区背景（亮色透明跟随终端） */
+function EditArea({ children, width }: { children: React.ReactNode; width: number }): React.JSX.Element {
+  const bg = resolveBg()
+  return (
+    <Box flexDirection="column" width={width} backgroundColor={bg}>
+      {children}
     </Box>
   )
 }
@@ -88,15 +102,14 @@ function StatusBar({
   modes: string[]
   width: number
 }): React.JSX.Element {
-  const name = path === null ? 'untitled.md' : (path.replace(/\\/g, '/').split('/').pop() ?? 'untitled.md')
-  const save = saveState === 'dirty' ? '·未保存' : saveState === 'saving' ? '·保存中' : ''
+  const name =
+    path === null ? t('editor.untitled') : (path.replace(/\\/g, '/').split('/').pop() ?? t('editor.untitled'))
+  const save = saveState === 'dirty' ? t('status.dirty') : saveState === 'saving' ? t('status.saving') : ''
   const badges = modes.length > 0 ? ` [${modes.join(' ')}]` : ''
-  const hints = inTable
-    ? ' [表格] Tab/⏎ 移动 · Alt+R 加行 · Alt+N 加列 · Alt+D 删行 · Alt+X 删列 · Alt+A 对齐 · Alt+T 删表'
-    : ' ^F 查找 · ^H 替换 · Alt+O 大纲 · Alt+S 源码 · Alt+F 专注 · Alt+P 打字机'
+  const hints = inTable ? t('status.tableHints') : t('status.hints')
   const left = ` ${name}${save} `
   const leftW = Array.from(left).reduce((a, ch) => a + (ch.charCodeAt(0) > 0xff ? 2 : 1), 0)
-  const info = ` Ln ${lineNo}, Col ${colNo} · ${lineCount} 行${badges} ·${hints} `
+  const info = ` ${t('status.line')} ${lineNo}, ${t('status.col')} ${colNo} · ${lineCount} ${t('status.lines')}${badges} ·${hints} `
   // 终端宽度内截断（CJK 宽字符不切半），保住文件名优先
   let acc = leftW
   let clipped = ''
@@ -125,6 +138,7 @@ export function TuiApp(props: TuiAppProps): React.JSX.Element {
     bottomOverlayRows = 0,
     onSaveState,
     registerFlush,
+    registerBaseline,
   } = props
   useSyncExternalStore(session.subscribe, session.getVersion, session.getVersion)
   const { exit } = useApp()
@@ -150,7 +164,8 @@ export function TuiApp(props: TuiAppProps): React.JSX.Element {
   useEffect(() => session.subscribe(() => autosaver.changed()), [session, autosaver])
   useEffect(() => {
     registerFlush?.(() => autosaver.flush())
-  }, [registerFlush, autosaver])
+    registerBaseline?.(() => autosaver.savedContent())
+  }, [registerFlush, registerBaseline, autosaver])
 
   const editHeight = Math.max(3, totalHeight - 1 - bottomOverlayRows)
 
@@ -263,11 +278,11 @@ export function TuiApp(props: TuiAppProps): React.JSX.Element {
 
   return (
     <Box flexDirection="column" height={totalHeight}>
-      <Box flexDirection="column">
+      <EditArea width={width}>
         {layout.rows.map((row, i) => (
           <RowView key={i} row={row} gutterWidth={gutterWidth} />
         ))}
-      </Box>
+      </EditArea>
       {bottomOverlay}
       <StatusBar
         path={session.path}

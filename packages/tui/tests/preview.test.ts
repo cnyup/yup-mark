@@ -33,7 +33,7 @@ describe('renderPreviewLines（无头装配）', () => {
     const lines = renderPreviewLines(stateAtEnd())
     const heading = lines[0]
     expect(plainLine(heading.spans)).toBe('标题一')
-    expect(heading.spans[0]).toMatchObject({ text: '标题一', bold: true, color: 'magenta' })
+    expect(heading.spans[0]).toMatchObject({ text: '标题一', bold: true, color: 'h1' })
   })
 
   it('非活跃块行内标记隐藏，样式 mark 保留（含 GFM 删除线）', () => {
@@ -45,7 +45,7 @@ describe('renderPreviewLines（无头装配）', () => {
     const strikeSpan = lines[2].spans.find((s) => s.text === '删除')
     expect(strikeSpan?.strikethrough).toBe(true)
     const codeSpan = lines[2].spans.find((s) => s.text === 'code')
-    expect(codeSpan?.color).toBe('cyan')
+    expect(codeSpan?.color).toBe('codeInline')
     expect(lines[2].spans.some((s) => s.text.includes('*'))).toBe(false)
     expect(lines[2].spans.some((s) => s.text.includes('~~'))).toBe(false)
   })

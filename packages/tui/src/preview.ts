@@ -45,15 +45,15 @@ export interface MarkRange {
 }
 
 /** 标题层级 → 颜色（MT4 主题化前的种子映射） */
+/** 标题层级 → 主题色 token（theme.ts 解析，MT4） */
 const HEADING_COLORS: Record<string, string> = {
-  'cm-h1': 'magenta',
-  'cm-h2': 'yellow',
-  'cm-h3': 'cyan',
-  'cm-h4': 'green',
-  'cm-h5': 'blue',
-  'cm-h6': 'gray',
+  'cm-h1': 'h1',
+  'cm-h2': 'h2',
+  'cm-h3': 'h3',
+  'cm-h4': 'h4',
+  'cm-h5': 'h5',
+  'cm-h6': 'h6',
 }
-
 
 /** 类名 → 样式（与桌面 base.css 的 .cm-* 规则同源，TUI.md §5 映射表） */
 export function classesToStyle(classes: string[], base: SpanStyle): SpanStyle {
@@ -73,17 +73,14 @@ export function classesToStyle(classes: string[], base: SpanStyle): SpanStyle {
         out.dim = true
         break
       case 'cm-inline-code':
-        out.color = out.color ?? 'cyan'
+        out.color = out.color ?? 'codeInline'
         break
       case 'cm-link-text':
-        out.color = out.color ?? 'blue'
+        out.color = out.color ?? 'link'
         out.underline = true
         break
       case 'cm-quote-line':
         out.dim = true
-        break
-      case 'cm-code-line':
-        out.color = out.color ?? 'green'
         break
       case 'cm-focus-dim':
         // 专注模式：非活跃块整体淡化（TUI.md §5）

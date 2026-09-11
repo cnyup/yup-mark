@@ -11,6 +11,10 @@ import { layoutViewport } from './editor/layout'
 import { loadFile } from './editor/doc'
 import { makeTab, WorkspaceApp } from './workspace'
 import { isDirectory } from './filetree'
+import { loadState } from './persist'
+import { setTheme } from './theme'
+import { setLang, detectLang } from './i18n'
+import { existsSync } from 'node:fs'
 
 const SAMPLE = [
   '# YupMark TUI',
@@ -49,8 +53,20 @@ async function main(): Promise<void> {
     if (isDirectory(a) && rootDir === null) rootDir = a
     else fileArgs.push(a)
   }
+  // 主题/语言恢复（设置持久化，MT4）
+  const saved = loadState()
+  if (saved !== null) {
+    setTheme(saved.theme)
+    setLang(saved.lang)
+  } else {
+    setLang(detectLang())
+  }
+
   const firstFile = fileArgs[0]
-  const content = firstFile !== undefined ? loadFile(firstFile) : SAMPLE
+  let content: string
+  if (firstFile !== undefined) content = loadFile(firstFile)
+  else if (saved !== null && fileArgs.length === 0 && saved.openTabs.length > 0) content = loadFile(saved.openTabs[0] ?? '')
+  else content = SAMPLE
 
   if (!process.stdout.isTTY) {
     // 非交互环境：走完整视口装配管线（表格网格/数学近似/占位框/代码着色，
@@ -78,9 +94,19 @@ async function main(): Promise<void> {
     process.on(sig, () => process.exit(0))
   }
 
-  const tabs = fileArgs.length > 0 ? fileArgs.map((p) => makeTab(p, loadFile(p))) : [makeTab(null, content)]
+  // 标签来源优先级：显式文件参数 > 上次会话 > 空白示例
+  let tabs: ReturnType<typeof makeTab>[]
+  if (fileArgs.length > 0) {
+    tabs = fileArgs.map((p) => makeTab(p, loadFile(p)))
+  } else if (saved !== null && saved.openTabs.length > 0) {
+    const restored = saved.openTabs.filter((p) => existsSync(p))
+    tabs = restored.length > 0 ? restored.map((p) => makeTab(p, loadFile(p))) : [makeTab(null, content)]
+  } else {
+    tabs = [makeTab(null, content)]
+  }
+  const effectiveRoot = rootDir ?? saved?.rootDir ?? null
   const instance = render(
-    <WorkspaceApp initialTabs={tabs} rootDir={rootDir} />,
+    <WorkspaceApp initialTabs={tabs} rootDir={effectiveRoot} />,
     {
       exitOnCtrlC: true,
       incrementalRendering: true,

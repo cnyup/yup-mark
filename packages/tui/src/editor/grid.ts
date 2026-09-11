@@ -112,12 +112,12 @@ export function renderTableGrid(table: ParsedTable, opts: GridOptions): GridResu
     const atChar = visible[offset] ?? ' '
     const right = visible.slice(offset + 1).join('')
     const pad = Math.max(0, width - textWidth(clipped))
-    const parts: RenderSegment[] = [seg(' ', { color: 'cyan' })]
-    if (left !== '') parts.push(seg(left, { color: 'cyan' }))
-    parts.push(seg(atChar, { color: 'cyan', inverse: true }))
+    const parts: RenderSegment[] = [seg(' ', { color: 'tableActive' })]
+    if (left !== '') parts.push(seg(left, { color: 'tableActive' }))
+    parts.push(seg(atChar, { color: 'tableActive', inverse: true }))
     const rest = right + ' '.repeat(pad)
-    if (rest !== '') parts.push(seg(rest, { color: 'cyan' }))
-    parts.push(seg(' ', { color: 'cyan' }))
+    if (rest !== '') parts.push(seg(rest, { color: 'tableActive' }))
+    parts.push(seg(' ', { color: 'tableActive' }))
     if (cur !== null) {
       let x = before
       for (let i = 0; i < offset; i++) x += textWidth(visible[i] ?? ' ')
@@ -217,10 +217,10 @@ export function renderHr(width: number): RenderSegment[] {
 /** 块级数学：居中渲染 Unicode 近似 */
 export function renderMathBlock(approx: string, width: number): RenderSegment[] {
   const pad = Math.max(0, Math.floor((width - textWidth(approx)) / 2))
-  return [seg(' '.repeat(pad) + approx, { italic: true, color: 'cyan' })]
+  return [seg(' '.repeat(pad) + approx, { italic: true, color: 'math' })]
 }
 
 /** 行内数学：作为文本段（layout 以 cells 形式挂载） */
 export function mathInlineStyle(): SpanStyle {
-  return { italic: true, color: 'cyan' }
+  return { italic: true, color: 'math' }
 }

@@ -88,6 +88,6 @@ describe('layoutViewport MT2 块装配', () => {
     expect(colored.length).toBeGreaterThan(0)
     // 注释段为灰色斜体
     const comment = codeRow!.segments.find((s) => s.text.includes('注释'))
-    expect(comment?.style.color).toBe('gray')
+    expect(comment?.style.color).toBe('syntaxComment')
   })
 })
