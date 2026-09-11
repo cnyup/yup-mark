@@ -26,25 +26,37 @@ const stubReactDevtools = {
 }
 
 /**
- * ink 6.8 对「帧高 ≥ 终端行数」的满屏应用绕过增量 renderer，每帧
- * clearTerminal（\x1b[2J\x1b[3J\x1b[H）+ 整帧重写——满屏 TUI 因此整屏闪烁
- * （2026 同步输出在 ConPTY/WSL interop 下不透传，清屏瞬间可见）。
- * 增量 renderer 本就为无尾随换行的满屏帧设计（其 hasTrailingNewline 分支），
- * 这里放行：incrementalRendering 时走 throttledLog 的逐行 diff。
- * ink 升级后锚点失配会显式抛错，提醒复核。MT5 发布打包需带上本插件。
+ * ink 6.8 的两个满屏相关缺陷，打包期修补（锚点失配显式抛错；MT5 发布打包需带上本插件）：
+ * 1) 「帧高 ≥ 终端行数」时绕过增量 renderer，每帧 clearTerminal 整帧重写 → 满屏
+ *    TUI 整屏闪烁（2026 同步输出在 ConPTY/WSL interop 不透传，清屏可见）。放行增量路径。
+ * 2) 非满屏帧会被追加尾随换行，而增量 renderer 的回退光标计算（cursorUp(N-1)、
+ *    returnToBottom）全部按「无尾随换行、光标停在最后一行」假设——每帧整体下移一行，
+ *    状态栏逐帧堆叠残影（帧高略小于终端行数时触发）。令 isFullscreen 恒为 isTTY，
+ *    帧永不带尾随换行，增量假设恒成立。
  */
 const patchInkFullscreen = {
   name: 'patch-ink-fullscreen',
   setup(build) {
     build.onLoad({ filter: /[/\\]node_modules[/\\]ink[/\\]build[/\\]ink\.js$/ }, async (args) => {
       const js = await readFile(args.path, 'utf8')
-      const needle = 'if (this.lastOutputHeight >= this.options.stdout.rows) {'
-      const patched =
-        'if (!this.options.incrementalRendering && this.lastOutputHeight >= this.options.stdout.rows) {'
-      if (!js.includes(needle)) {
-        throw new Error('patch-ink-fullscreen: ink.js 锚点未找到（ink 升级后需复核补丁）')
+      const needles = [
+        [
+          'if (this.lastOutputHeight >= this.options.stdout.rows) {',
+          'if (!this.options.incrementalRendering && this.lastOutputHeight >= this.options.stdout.rows) {',
+        ],
+        [
+          'const isFullscreen = this.options.stdout.isTTY && outputHeight >= this.options.stdout.rows;',
+          'const isFullscreen = this.options.stdout.isTTY;',
+        ],
+      ]
+      let out = js
+      for (const [needle, patched] of needles) {
+        if (!out.includes(needle)) {
+          throw new Error(`patch-ink-fullscreen: ink.js 锚点未找到（ink 升级后需复核补丁）: ${needle}`)
+        }
+        out = out.replace(needle, patched)
       }
-      return { contents: js.replace(needle, patched), loader: 'js' }
+      return { contents: out, loader: 'js' }
     })
   },
 }

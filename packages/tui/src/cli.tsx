@@ -14,7 +14,7 @@ import { isDirectory } from './filetree'
 import { loadState } from './persist'
 import { setTheme } from './theme'
 import { setLang, detectLang } from './i18n'
-import { appendFileSync, existsSync, writeFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 
 const SAMPLE = [
   '# YupMark TUI',
@@ -42,23 +42,6 @@ function enterAltScreen(): void {
 /** 退出备用屏幕 + 恢复光标（重复发送无害） */
 function exitAltScreen(): void {
   process.stdout.write('\x1b[?25h\x1b[?1049l')
-}
-
-/**
- * 调试设施：YUPMARK_DEBUG_OUT=<文件> 时把发往终端的每个 VT 载荷追加到该文件
- * （ESC 以 \u001b 转义）。排查闪烁/重绘问题的证据通道。
- */
-function enableFrameCapture(target: string): void {
-  writeFileSync(target, '')
-  const real = process.stdout.write.bind(process.stdout) as (chunk: string | Uint8Array) => boolean
-  process.stdout.write = ((chunk: string | Uint8Array): boolean => {
-    try {
-      appendFileSync(target, `[${Date.now()}] ${JSON.stringify(String(chunk))}\n`)
-    } catch {
-      /* 调试通道失败不影响运行 */
-    }
-    return real(chunk)
-  }) as typeof process.stdout.write
 }
 
 async function main(): Promise<void> {
@@ -110,7 +93,6 @@ async function main(): Promise<void> {
   for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) {
     process.on(sig, () => process.exit(0))
   }
-  if (process.env.YUPMARK_DEBUG_OUT !== undefined) enableFrameCapture(process.env.YUPMARK_DEBUG_OUT)
 
   // 标签来源优先级：显式文件参数 > 上次会话 > 空白示例
   let tabs: ReturnType<typeof makeTab>[]
@@ -123,13 +105,10 @@ async function main(): Promise<void> {
     tabs = [makeTab(null, content)]
   }
   const effectiveRoot = rootDir ?? saved?.rootDir ?? null
-  const instance = render(
-    <WorkspaceApp initialTabs={tabs} rootDir={effectiveRoot} />,
-    {
-      exitOnCtrlC: true,
-      incrementalRendering: true,
-    },
-  )
+  const instance = render(<WorkspaceApp initialTabs={tabs} rootDir={effectiveRoot} />, {
+    exitOnCtrlC: true,
+    incrementalRendering: true,
+  })
   await instance.waitUntilExit()
 }
 
