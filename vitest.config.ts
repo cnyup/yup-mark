@@ -7,6 +7,10 @@ export default defineConfig({
     setupFiles: ['tests/setup.ts'],
     include: ['tests/unit/**/*.test.{ts,tsx}', 'packages/tui/tests/**/*.test.{ts,tsx}'],
   },
+  esbuild: {
+    // tui 的 tsx（无显式 React 导入）按自动运行时转换
+    jsx: 'automatic',
+  },
   resolve: {
     alias: {
       '@shared': resolve(__dirname, 'src/shared'),

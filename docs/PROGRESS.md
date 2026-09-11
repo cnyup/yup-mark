@@ -13,7 +13,7 @@
 | M4 主题与打磨 | 主题系统、i18n、设置页、快捷键对齐、视图三件套 | ✅ 完成（超出原范围，含大量 Typora 对齐打磨） |
 | M5 开源发布 | 打包、自动更新、README/贡献指南、发布 | ⬜ 未开始 |
 
-**验证基线**：typecheck 0 错误（node/web/tui 三 project）· eslint 干净 · vitest 21 文件 / 144 用例全绿。
+**验证基线**：typecheck 0 错误（node/web/tui 三 project）· eslint 干净 · vitest 27 文件 / 197 用例全绿。
 
 ## 2. 已完成功能清单
 
@@ -79,4 +79,11 @@
 - **monorepo**：npm workspaces；`src/renderer/editor`（20 文件）→ `packages/live-cm`（包名 `@yupmark/live-cm`，exports `./src/*.ts` 直出 TS 源）；桌面 app/测试全部改经 `@yupmark/live-cm/*` 导入；`@shared/paths` 归入内核（`live-cm/paths.ts`，app 反向引用内核）。
 - **TUI 包** `packages/tui`（`yupmark-tui`）：`src/preview.ts`（无头装配器：装饰 → Span 结构，EditorSurface 种子）· `src/state.ts`（docState 解析器工厂，GFM+数学与内核对齐）· `src/cli.tsx`（Ink 备用屏静态预览，q/Esc/Ctrl+C 退出；非 TTY 纯文本输出供 CI）· `scripts/headless-smoke.mjs`（esbuild 打包内核→无 DOM 运行，输出 17 项装饰区间）。
 - **验证**：typecheck 三 project / lint / **144 用例**（+6 TUI preview 单测）/ 桌面生产构建产物 hash 与迁移前一致（零逻辑改动佐证）；冒烟与 CLI 非 TTY 运行均通过。偏差与发现记录见 TUI.md §12。
-- **下一步**：MT1 EditorSurface 编辑面（光标/输入/滚动/CJK/自动保存）。
+
+## 8. MT1 完成（2026-09-11，EditorSurface 编辑面 MVP）
+
+- **模块**（packages/tui/src/editor/）：session（CM6 无头事务宿主 + useSyncExternalStore 协议）· measure（string-width CJK 列换算/码点步进/贪心软换行）· layout（装饰→cells→视觉行，widget 终端替身 ○/◉/•，光标反色格，同参 memo）· viewport（行级滚动 + 居中兜底）· keys（D17 MT1 子集：输入/删除/列表续写/方向键视觉列目标/词跳/PgUp/PgDn/选择/^S/^Q）· doc（800ms 防抖自动保存 + 退出 flush）· app（编辑面 + 状态栏 + useCursor IME 锚点）。
+- **CLI**：`yupmark [file.md]` 可编辑闭环；非 TTY 仍走纯文本预览。
+- **性能（RT4 兑现与治理）**：10k 行中文文档每键全量装饰 90ms → 内核新增 range 参数（附加式，桌面不受影响）→ **14ms/键**（ink 30fps 预算内）；`scripts/perf.mjs` 探针纳入验收工具；等价性护栏 `live-range.test.ts`。
+- **验证**：typecheck×3 / lint / **197 用例**（+41 TUI MT1 单测 + 6 区间等价用例）；react-hooks 编译器级规则全过。
+- **下一步**：MT2 高级语法（表格 box 网格 / 数学 Unicode 近似 / 占位框 / 代码 ANSI 高亮）。

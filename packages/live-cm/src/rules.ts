@@ -51,10 +51,14 @@ function parseImageParts(text: string): { alt: string; src: string } {
  * 的坐标映射，导致点击落点错位。replace 范围完全不在 DOM 中，坐标语义正确。
  *
  * @param extraActive 额外强制显示源码的范围（IME 组合输入冻结用）
+ * @param range 可选装配区间：只产出与该文档区间相交的装饰（TUI 视口渲染用，
+ *   10k 行文档每键全量重算 60ms+ → 视口内 <2ms）。缺省 = 全文档（桌面行为不变）。
+ *   区间内产出与全量计算完全一致（按块状态无关，无跨块副作用）。
  */
 export function buildLiveDecorations(
   state: EditorState,
   extraActive: { from: number; to: number }[] = [],
+  range?: { from: number; to: number },
 ): Range<Decoration>[] {
   // 源码模式（⌘/）：语法符号全部可见（着色由 markdown 基础高亮提供），仅保留块样式与行内样式，
   // 并挂行号槽 + 当前行高亮（viewModes 的 Compartment）——Typora 源码视图同款
@@ -64,6 +68,8 @@ export function buildLiveDecorations(
   const doc = state.doc
   const blocks = topLevelBlocks(state)
   const active = computeActiveSet(blocks, state.selection.ranges as readonly SelectionRange[], extraActive)
+  const inRange = (from: number, to: number): boolean =>
+    range === undefined || (to >= range.from && from <= range.to)
 
   const hide = (from: number, to: number): void => {
     if (!sourceMode && to > from) hidden.push({ from, to })
@@ -95,7 +101,7 @@ export function buildLiveDecorations(
     let pos = from
     for (;;) {
       const line = doc.lineAt(pos)
-      out.push(Decoration.line({ class: cls }).range(line.from))
+      if (inRange(line.from, line.to)) out.push(Decoration.line({ class: cls }).range(line.from))
       if (line.to >= to) break
       pos = line.to + 1
     }
@@ -104,7 +110,7 @@ export function buildLiveDecorations(
   // 专注模式：非活跃块整体淡化（当前编辑块保持全亮）
   if (state.field(focusModeField, false)) {
     for (const b of blocks) {
-      if (!active.has(b)) lineClass(b.from, b.to, 'cm-focus-dim')
+      if (inRange(b.from, b.to) && !active.has(b)) lineClass(b.from, b.to, 'cm-focus-dim')
     }
   }
 
@@ -389,7 +395,8 @@ export function buildLiveDecorations(
   const tree = ensureSyntaxTree(state, state.doc.length, 100) ?? syntaxTree(state)
   let node = tree.topNode.firstChild
   while (node) {
-    walk(node, 'Document')
+    if (range !== undefined && node.from > range.to) break // 顶层节点按序，可提前终止
+    if (inRange(node.from, node.to)) walk(node, 'Document')
     node = node.nextSibling
   }
 

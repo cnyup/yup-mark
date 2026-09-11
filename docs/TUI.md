@@ -178,7 +178,7 @@ Ink useInput → keys.ts 翻译 → view-less 事务调度
 | 阶段 | 交付物 | 验收标准 |
 |------|--------|----------|
 | **MT0 脚手架 + 内核抽包** ✅（2026-09-11） | npm workspaces monorepo；`src/renderer/editor → packages/live-cm` 平移（零逻辑改动）；桌面端改引用；TUI 包骨架 + Ink 备用屏 hello world；**纯 Node 无头冒烟脚本**（buildLiveDecorations 在无 DOM 下跑通） | 桌面端全部用例照旧全绿（仅 import 路径变化，生产构建产物 hash 不变）；`node packages/tui/scripts/headless-smoke.mjs` 输出装饰区间 ✅ |
-| **MT1 编辑面 MVP** | EditorSurface：单栏渲染态（基础语法全表 §5 上半）+ 光标所在块显源码 + CJK 宽字符安全 + 自动保存 + 打开/编辑/保存单文件 | 中文 10k 行文档滚动/输入流畅；samples/ 基础样例渲染对照桌面截图；IME（Windows Terminal + WSL 各测）组合输入不丢字 |
+| **MT1 编辑面 MVP** ✅（2026-09-11） | EditorSurface：单栏渲染态（基础语法全表 §5 上半）+ 光标所在块显源码 + CJK 宽字符安全 + 自动保存 + 打开/编辑/保存单文件 | 中文 10k 行文档滚动/输入流畅（实测每键 14ms，见 §12 备忘）；samples/ 渲染经 CLI 预览验证；IME 组合输入待真机手验 |
 | **MT2 高级语法** | 表格 box 网格（含单元格编辑 + 上下文工具栏）+ 数学 Unicode 近似 + mermaid/图片占位框 + 代码块 ANSI 高亮 | samples/ 全量黄金样例集通过（含近似失败降级路径）；表格行列操作复用 tableOps 用例 |
 | **MT3 壳与效率** | 文件树/大纲/多标签（状态快照）/查找替换/视图三件套/上下文菜单 | 典型仓库（500+ 文件）树导航流畅；⌘F 等价物与桌面行为对齐清单 |
 | **MT4 主题与收口** | 7 主题调色板 + i18n + 会话恢复 + 外部修改检测（三选一弹窗）+ 设置栏 | 七主题目测无破相；外部修改流程与桌面一致 |
@@ -217,6 +217,16 @@ Ink useInput → keys.ts 翻译 → view-less 事务调度
 4. **`tsconfig.tui.json` 的 lib 含 DOM**：仅为类型检查（内核 `inlineRender.ts` 的 DOM 类型引用）；运行时纯度由无头冒烟脚本与 `headless-node.test.ts` 双重守护。
 5. TUI 的解析器配置集中在 `packages/tui/src/state.ts`（`docState`），与内核 `baseExtensions` 的语言配置对齐但不挂 view 专属扩展——MT1 起生长为事务调度宿主。
 6. 验证基线更新：**21 文件 / 144 用例**（+6 个 TUI preview 单测）；桌面生产构建产物 hash 与迁移前一致（`index-uDV3AUFc.js`），佐证零逻辑改动。
+
+## 12a. MT1 落地备忘（2026-09-11）
+
+1. **内核新增 range 参数**（MT1 唯一内核改动，附加式）：`buildLiveDecorations(state, extraActive, range?)` 按语法节点粒度只装配与区间相交的装饰。动因：10k 行中文文档每键全量重算实测 90ms（RT4 风险兑现）→ 区间化后每键 14ms（ink maxFps 30 帧预算 33ms，宽裕）。等价性契约由 `tests/unit/live-range.test.ts` 护栏（区间内产出与全量一致 + partial ⊆ full，节点边界允许溢出）。**桌面端未启用 range**——其 94ms 全量口径与 ROADMAP P1-6（10k 性能回归）同源，可共享此参数做 view.viewport 级优化，列为双轨共享优化项。
+2. **布局架构**：`editor/layout.ts` 的 cells 模型（隐藏字符剔除 → widget 终端替身 → mark 套样式 → CJK 贪心软换行 → 光标反色格）。同参 memo 缓存让滚动检查与渲染每键只装配一次。虚拟 EOL 空格 cell 承接行尾光标与换行边界输入。
+3. **键位（D17 MT1 子集）**：可打印输入（多字符整串=粘贴）/Enter（列表续写：无序补 `- `、有序递增、任务补 `[ ] `、空项退出列表）/Backspace（行首并行的 CJK 码点删除）/Delete/Tab（两空格）/方向键（码点步进 + 上下行视觉列目标）/Home/End/PgUp/PgDn/Ctrl+Home/End/Ctrl+左右词跳/Shift+方向选择/Esc 收选区/^S 保存/^Q 退出。`q` 是普通字符（编辑器语义）。
+4. **react-hooks 编译器级规则**（refs/immutability）倒逼的正确结构：滚动决策全部在输入/resize 事件期（firstLine 真 state + ref 镜像）；Autosaver 组件内构造、经 session.subscribe 订阅感知文档变化（不改 props 对象）；KeyContext 为 useMemo 对象 + ref getter。
+5. **光标双轨**：反色格（视觉块状光标）+ ink useCursor 终端光标锚定（IME preedit 显示在光标处——中文输入生命线）。
+6. **已知边界（MT2+ 处理）**：选区只有状态没有高亮渲染（查找替换 MT3 需要）；样式快捷键（Ctrl+B/I…）与视图三件套未接；Tab 列表层级升降未做（与桌面 ROADMAP P0 共享 blockOps 实现任务）。
+7. 验证基线：**27 文件 / 197 用例**；`node packages/tui/scripts/perf.mjs` 为 10k 行性能探针（纳入 MT 验收工具）。
 
 ## 13. 与既有文档的关系
 

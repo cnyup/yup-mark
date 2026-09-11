@@ -1,18 +1,16 @@
 /**
- * yupmark-tui CLI 入口（MT0 骨架）。
+ * yupmark-tui CLI 入口（MT1：可编辑单文件闭环）。
  *
- * TTY：备用屏幕缓冲（alternate screen，vim 同款）+ 隐藏光标，
- *      展示 @yupmark/live-cm 无头驱动的渲染态预览，q / Esc / Ctrl+C 退出。
- *      （ink 6.8 稳定版尚无 alternateScreen 选项，这里用标准转义码自实现，
- *        即未来 ink 内置特性的等价物；升级 ink 后可换回官方 API。）
- * 非 TTY（CI、管道）：打印去样式纯文本预览后正常退出——供脚本化验证。
- *
- * 编辑能力（光标/输入/滚动）自 MT1 起进入；本入口先钉死"内核 → 终端"链路。
+ * 用法：yupmark [file.md]（缺省打开内置示例文档，只演示不落盘）
+ * TTY：备用屏幕 + 编辑面（光标/输入/CJK/自动保存）；q 是普通字符，^Q 退出、^S 保存。
+ * 非 TTY（CI、管道）：打印渲染态纯文本预览后退出 0——脚本化验证通道。
  */
-import React from 'react'
-import { render, Box, Text, useApp, useInput } from 'ink'
-import { renderPreviewLines, previewToPlainText, type PreviewLine, type Span } from './preview'
+import { render } from 'ink'
+import { renderPreviewLines, previewToPlainText } from './preview'
 import { docState } from './state'
+import { EditorSession } from './editor/session'
+import { loadFile } from './editor/doc'
+import { TuiApp } from './editor/app'
 
 const SAMPLE = [
   '# YupMark TUI',
@@ -20,84 +18,17 @@ const SAMPLE = [
   '内核 @yupmark/live-cm 在**无头模式**驱动终端渲染，',
   '样式 mark *常驻*，标记就近淡显——与桌面版同一套规则。',
   '',
-  '## 已覆盖（MT0 静态预览）',
+  '## MT1：可编辑',
   '',
-  '- 标题层级与颜色映射',
-  '- `行内代码`、[链接文字](https://github.com/cnyup/yup-mark)',
-  '- 删除线 ~~旧方案~~ 与组合样式',
+  '- 光标移动（方向键/Home/End/PgUp/PgDn，CJK 宽字符安全）',
+  '- 输入与删除（含列表续写：上一行是 `- 项` 回车自动补 `- `）',
+  '- `行内代码`、[链接文字](https://github.com/cnyup/yup-mark)、~~删除线~~',
+  '- 自动保存（800ms 防抖落盘，^S 立即保存）',
   '',
-  '> 引用块：竖线前缀 + 淡显，对应桌面左边框。',
+  '> 引用块：竖线前缀 + 淡显。',
   '',
-  '```ts',
-  'const ok = true // 代码块行样式（ANSI 高亮在 MT2）',
-  '```',
-  '',
-  '### 光标所在块显源码（MT1）',
-  '',
-  '以下块 MT0 显示源码，MT1/MT2 逐步替换为终端形态：',
-  '',
-  '- [ ] 任务复选框 → ○/◉',
-  '',
-  '| 语法 | 桌面 | TUI |',
-  '| --- | --- | --- |',
-  '| 表格 | 网格 Widget | box 网格（MT2） |',
-  '',
-  '$e=mc^2$ → Unicode 近似（MT2）',
-  '',
-  '---',
-  '',
-  '（示例文档结束）',
+  '（^Q 退出 · ^S 保存 · 未命名示例不落盘）',
 ].join('\n')
-
-function buildSampleState(): ReturnType<typeof docState> {
-  // 光标放在文末：示例中标题/引用等块处于"非活跃"态 → 标记隐藏，正是渲染态语义
-  return docState(SAMPLE)
-}
-
-function SpanText({ span }: { span: Span }): React.JSX.Element {
-  return (
-    <Text
-      bold={span.bold}
-      italic={span.italic}
-      dimColor={span.dim}
-      underline={span.underline}
-      strikethrough={span.strikethrough}
-      color={span.color}
-    >
-      {span.text}
-    </Text>
-  )
-}
-
-function PreviewLineView({ line }: { line: PreviewLine }): React.JSX.Element {
-  return (
-    <Text>
-      {line.spans.map((s, i) => (
-        <SpanText key={i} span={s} />
-      ))}
-    </Text>
-  )
-}
-
-function App({ lines }: { lines: PreviewLine[] }): React.JSX.Element {
-  const { exit } = useApp()
-  useInput((input, key) => {
-    if (input === 'q' || key.escape || (key.ctrl && input === 'c')) exit()
-  })
-  return (
-    <Box flexDirection="column" borderStyle="round" borderColor="magenta" paddingX={1}>
-      <Text bold color="magenta">
-        YupMark TUI · MT0 —— @yupmark/live-cm 无头驱动
-      </Text>
-      <Text> </Text>
-      {lines.map((l, i) => (
-        <PreviewLineView key={i} line={l} />
-      ))}
-      <Text> </Text>
-      <Text dimColor>q / Esc / Ctrl+C 退出 · 编辑能力自 MT1 进入</Text>
-    </Box>
-  )
-}
 
 /** 进入备用屏幕 + 隐藏光标 */
 function enterAltScreen(): void {
@@ -110,14 +41,17 @@ function exitAltScreen(): void {
 }
 
 async function main(): Promise<void> {
-  const state = buildSampleState()
-  const lines = renderPreviewLines(state)
+  const fileArg = process.argv[2]
+  const path = fileArg !== undefined && fileArg.length > 0 ? fileArg : null
+  const content = path === null ? SAMPLE : loadFile(path)
 
   if (!process.stdout.isTTY) {
-    // 非交互环境：纯文本输出（供 CI 与脚本化验证，退出码 0）
-    process.stdout.write(previewToPlainText(lines) + '\n')
+    // 非交互环境：渲染态纯文本预览（供 CI 与脚本化验证，退出码 0）
+    process.stdout.write(previewToPlainText(renderPreviewLines(docState(content))) + '\n')
     return
   }
+
+  const session = new EditorSession(path, content, 0)
 
   enterAltScreen()
   process.on('exit', exitAltScreen)
@@ -125,7 +59,7 @@ async function main(): Promise<void> {
     process.on(sig, () => process.exit(0))
   }
 
-  const instance = render(<App lines={lines} />, {
+  const instance = render(<TuiApp session={session} />, {
     exitOnCtrlC: true,
     incrementalRendering: true,
   })

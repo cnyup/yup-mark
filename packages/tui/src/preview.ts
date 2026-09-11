@@ -20,6 +20,8 @@ export interface SpanStyle {
   strikethrough?: boolean
   /** 前景色（终端色名；MT0 固定映射，MT4 换主题调色板） */
   color?: string
+  /** 前景/背景反转（光标格） */
+  inverse?: boolean
 }
 
 export interface Span extends SpanStyle {
@@ -30,7 +32,7 @@ export interface PreviewLine {
   spans: Span[]
 }
 
-interface MarkRange {
+export interface MarkRange {
   from: number
   to: number
   classes: string[]
@@ -48,7 +50,7 @@ const HEADING_COLORS: Record<string, string> = {
 
 
 /** 类名 → 样式（与桌面 base.css 的 .cm-* 规则同源，TUI.md §5 映射表） */
-function classesToStyle(classes: string[], base: SpanStyle): SpanStyle {
+export function classesToStyle(classes: string[], base: SpanStyle): SpanStyle {
   const out: SpanStyle = { ...base }
   for (const cls of classes.flatMap((c) => c.split(/\s+/))) {
     switch (cls) {
@@ -92,28 +94,48 @@ function styleKey(s: SpanStyle): string {
   return [s.bold, s.italic, s.dim, s.underline, s.strikethrough, s.color].join('|')
 }
 
-/** 装饰 → 样式行。state 需已含 markdown() 扩展与目标选区。 */
-export function renderPreviewLines(state: EditorState): PreviewLine[] {
-  const decos: Range<Decoration>[] = buildLiveDecorations(state)
-  const doc = state.doc
+/** 样式收集结果（layout.ts 与本模块共享） */
+export interface DecorationIndex {
+  hidden: { from: number; to: number }[]
+  marks: MarkRange[]
+  lineBase: Map<number, string[]>
+  widgets: { from: number; to: number; widget: unknown }[]
+}
 
-  const hidden: { from: number; to: number }[] = []
-  const marks: MarkRange[] = []
-  const lineBase = new Map<number, string[]>()
+/** 装饰四路分流：hidden（纯隐藏）/ marks / line（行首 class）/ widgets（替换型） */
+export function collectDecorations(
+  state: EditorState,
+  range?: { from: number; to: number },
+): DecorationIndex {
+  const decos: Range<Decoration>[] = buildLiveDecorations(state, [], range)
+  const idx: DecorationIndex = {
+    hidden: [],
+    marks: [],
+    lineBase: new Map(),
+    widgets: [],
+  }
   for (const d of decos) {
     const spec = d.value.spec as { class?: unknown; widget?: unknown }
-    if (spec.widget != null) continue // widget 块 → MT0 显源码
-    if (spec.class === undefined) {
-      if (d.to > d.from) hidden.push({ from: d.from, to: d.to })
+    if (spec.widget != null) {
+      idx.widgets.push({ from: d.from, to: d.to, widget: spec.widget })
+    } else if (spec.class === undefined) {
+      if (d.to > d.from) idx.hidden.push({ from: d.from, to: d.to })
     } else if (d.from === d.to) {
       // Decoration.line：from === to === 行首
-      const arr = lineBase.get(d.from) ?? []
+      const arr = idx.lineBase.get(d.from) ?? []
       arr.push(String(spec.class))
-      lineBase.set(d.from, arr)
+      idx.lineBase.set(d.from, arr)
     } else {
-      marks.push({ from: d.from, to: d.to, classes: [String(spec.class)] })
+      idx.marks.push({ from: d.from, to: d.to, classes: [String(spec.class)] })
     }
   }
+  return idx
+}
+
+/** 装饰 → 样式行。state 需已含 markdown() 扩展与目标选区。 */
+export function renderPreviewLines(state: EditorState): PreviewLine[] {
+  const doc = state.doc
+  const { hidden, marks, lineBase } = collectDecorations(state)
 
   const isHidden = (pos: number): boolean => hidden.some((h) => pos >= h.from && pos < h.to)
 

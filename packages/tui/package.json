@@ -12,6 +12,7 @@
   "dependencies": {
     "@yupmark/live-cm": "*",
     "ink": "^6.7.0",
-    "react": "^19.2.8"
+    "react": "^19.2.8",
+    "string-width": "^4.2.3"
   }
 }
