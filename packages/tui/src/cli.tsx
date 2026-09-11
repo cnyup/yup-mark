@@ -10,6 +10,7 @@ import { docState } from './state'
 import { layoutViewport } from './editor/layout'
 import { loadFile } from './editor/doc'
 import { makeTab, WorkspaceApp } from './workspace'
+import { isDirectory } from './filetree'
 
 const SAMPLE = [
   '# YupMark TUI',
@@ -40,9 +41,16 @@ function exitAltScreen(): void {
 }
 
 async function main(): Promise<void> {
-  const fileArgs = process.argv.slice(2).filter((a) => a.length > 0)
-  const path = fileArgs[0] !== undefined ? fileArgs[0] : null
-  const content = path === null ? SAMPLE : loadFile(path)
+  const args = process.argv.slice(2).filter((a) => a.length > 0)
+  // 参数分流：目录 → 工作区模式（文件树 + 空白标签）；文件 → 多标签
+  let rootDir: string | null = null
+  const fileArgs: string[] = []
+  for (const a of args) {
+    if (isDirectory(a) && rootDir === null) rootDir = a
+    else fileArgs.push(a)
+  }
+  const firstFile = fileArgs[0]
+  const content = firstFile !== undefined ? loadFile(firstFile) : SAMPLE
 
   if (!process.stdout.isTTY) {
     // 非交互环境：走完整视口装配管线（表格网格/数学近似/占位框/代码着色，
@@ -64,19 +72,20 @@ async function main(): Promise<void> {
     return
   }
 
-
-
   enterAltScreen()
   process.on('exit', exitAltScreen)
   for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) {
     process.on(sig, () => process.exit(0))
   }
 
-  const tabs = fileArgs.length > 0 ? fileArgs.map((p) => makeTab(p, loadFile(p))) : [makeTab(null, content)];
-  const instance = render(<WorkspaceApp initialTabs={tabs} />, {
-    exitOnCtrlC: true,
-    incrementalRendering: true,
-  })
+  const tabs = fileArgs.length > 0 ? fileArgs.map((p) => makeTab(p, loadFile(p))) : [makeTab(null, content)]
+  const instance = render(
+    <WorkspaceApp initialTabs={tabs} rootDir={rootDir} />,
+    {
+      exitOnCtrlC: true,
+      incrementalRendering: true,
+    },
+  )
   await instance.waitUntilExit()
 }
 

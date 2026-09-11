@@ -30,6 +30,11 @@ import {
 } from '@yupmark/live-cm/viewModes'
 import type { SaveState } from './editor/doc'
 import { textWidth } from './editor/measure'
+import { flattenTree, rootLabel, scanTree, type FlatNode, type TreeNode } from './filetree'
+import { MENU_ACTIONS } from './editor/context-menu'
+import { loadFile } from './editor/doc'
+import { writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 export interface WorkspaceTab {
   id: number
@@ -159,10 +164,103 @@ function OutlinePanel({
 }
 
 // ---------------------------------------------------------------------------
+// 文件树面板
+// ---------------------------------------------------------------------------
+
+const TREE_WIDTH = 28
+
+function FileTreePanel({
+  flat,
+  cursorIdx,
+  expanded,
+  rootName,
+  width,
+  height,
+  newFile,
+  activeRel,
+}: {
+  flat: FlatNode[]
+  cursorIdx: number
+  expanded: Set<string>
+  rootName: string
+  width: number
+  height: number
+  newFile: { active: boolean; name: string } | null
+  activeRel: string | null
+}): React.JSX.Element {
+  const start = Math.max(0, Math.min(cursorIdx - Math.floor(height / 2), Math.max(0, flat.length - height)))
+  const visible = flat.slice(start, start + height)
+  return (
+    <Box flexDirection="column" borderStyle="single" borderColor="green" width={width} height={height}>
+      <Box height={1}>
+        <Text bold color="green">{` ${rootName}`}</Text>
+      </Box>
+      {visible.map((f, i) => {
+        const idx = start + i
+        const n = f.node
+        const icon = n.type === 'dir' ? (expanded.has(n.rel) ? '▾' : '▸') : '·'
+        const label = `${'  '.repeat(f.depth)}${icon} ${n.name}`.slice(0, width - 4)
+        const selected = idx === cursorIdx && !(newFile?.active ?? false)
+        const isActive = n.type === 'file' && n.rel === activeRel
+        return (
+          <Box key={n.rel} height={1}>
+            {selected ? (
+              <Text inverse>{` ${label}`}</Text>
+            ) : isActive ? (
+              <Text color="cyan">{` ${label}`}</Text>
+            ) : n.type === 'dir' ? (
+              <Text bold>{` ${label}`}</Text>
+            ) : (
+              <Text>{` ${label}`}</Text>
+            )}
+          </Box>
+        )
+      })}
+      {newFile?.active ? (
+        <Box height={1}>
+          <Text color="green">{` + ${newFile.name}`}</Text>
+          <Text inverse>{' '}</Text>
+        </Box>
+      ) : null}
+      <Box height={1}>
+        <Text dimColor>{' ⏎打开 · h/l 折叠 · n新建 · r刷新'}</Text>
+      </Box>
+    </Box>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// 上下文菜单
+// ---------------------------------------------------------------------------
+
+function ContextMenu(): React.JSX.Element {
+  return (
+    <Box flexDirection="column" borderStyle="round" borderColor="magenta" paddingX={1}>
+      <Text bold color="magenta">
+        {' 插入与格式 '}
+      </Text>
+      {MENU_ACTIONS.map((a) => (
+        <Box key={a.key} height={1}>
+          <Text color="yellow">{` ${a.key} `}</Text>
+          <Text>{` ${a.label}`}</Text>
+        </Box>
+      ))}
+      <Text dimColor>{' Esc 关闭'}</Text>
+    </Box>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // 工作区
 // ---------------------------------------------------------------------------
 
-export function WorkspaceApp({ initialTabs }: { initialTabs: WorkspaceTab[] }): React.JSX.Element {
+export function WorkspaceApp({
+  initialTabs,
+  rootDir,
+}: {
+  initialTabs: WorkspaceTab[]
+  rootDir?: string | null
+}): React.JSX.Element {
   const { exit } = useApp()
   const { stdout } = useStdout()
   const [size, setSize] = useState(() => ({ w: stdout.columns ?? 80, h: stdout.rows ?? 24 }))
@@ -179,6 +277,13 @@ export function WorkspaceApp({ initialTabs }: { initialTabs: WorkspaceTab[] }): 
   const [dirtyIds, setDirtyIds] = useState<Set<number>>(new Set())
   const [search, setSearch] = useState<SearchState>(initialSearch)
   const [outlineOpen, setOutlineOpen] = useState(false)
+  // 文件树（MT3b）：根目录由 cli 传入；打开时扫描
+  const [treeOpen, setTreeOpen] = useState(false)
+  const [treeRoot, setTreeRoot] = useState<TreeNode | null>(rootDir !== null && rootDir !== undefined ? scanTree(rootDir) : null)
+  const [treeExpanded, setTreeExpanded] = useState<Set<string>>(new Set())
+  const [treeCursor, setTreeCursor] = useState(0)
+  const [newFile, setNewFile] = useState<{ active: boolean; name: string } | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [outlineIdx, setOutlineIdx] = useState(0)
 
   const flushersRef = useRef(new Map<number, () => void>())
@@ -321,6 +426,8 @@ export function WorkspaceApp({ initialTabs }: { initialTabs: WorkspaceTab[] }): 
     } catch {
       return []
     }
+    // activeVersion 触发编辑后重提取（编译器视为多余依赖，实际必要）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [outlineOpen, tab, activeVersion])
 
   const handleOutlineInput = useCallback(
@@ -348,15 +455,6 @@ export function WorkspaceApp({ initialTabs }: { initialTabs: WorkspaceTab[] }): 
       }
     },
     [outlineItems, outlineIdx, activeId, tabs], // eslint-disable-line react-hooks/exhaustive-deps
-  )
-
-  const overlayOpen = search.open || outlineOpen
-  useInput(
-    (input: string, key: Key) => {
-      if (search.open) handleSearchInput(input, key)
-      else if (outlineOpen) handleOutlineInput(input, key)
-    },
-    { isActive: overlayOpen },
   )
 
   const switchTab = (dir: 1 | -1): void => {
@@ -389,6 +487,137 @@ export function WorkspaceApp({ initialTabs }: { initialTabs: WorkspaceTab[] }): 
   }
 
   // ---- 全局组合键（编辑面 preInterceptor） ----
+  // ---- 文件树（MT3b） ----
+  const treeFlat = useMemo(
+    () => (treeRoot === null ? [] : flattenTree(treeRoot, treeExpanded)),
+    [treeRoot, treeExpanded],
+  )
+
+  const rescanTree = useCallback((): void => {
+    if (rootDir !== null && rootDir !== undefined) setTreeRoot(scanTree(rootDir))
+  }, [rootDir])
+
+  /** 打开文件（去重：已在标签中则激活） */
+  const openFileTab = useCallback(
+    (rel: string): void => {
+      if (rootDir === null || rootDir === undefined) return
+      const abs = join(rootDir, rel)
+      const existing = tabs.find((t) => t.path === abs)
+      if (existing !== undefined) {
+        setActiveId(existing.id)
+        return
+      }
+      const content = (() => {
+        try {
+          return loadFile(abs)
+        } catch {
+          return null
+        }
+      })()
+      if (content === null) return
+      const t = makeTab(abs, content)
+      setTabs((prev) => [...prev, t])
+      setActiveId(t.id)
+    },
+    [rootDir, tabs],
+  )
+
+  const handleTreeInput = useCallback(
+    (input: string, key: Key): void => {
+      const flat = treeFlat
+      const cur = flat[treeCursor]?.node
+      if (newFile?.active) {
+        if (key.escape) {
+          setNewFile(null)
+        } else if (key.return) {
+          const rel = newFile.name.trim()
+          if (rel !== '' && rootDir != null) {
+            try {
+              const abs = join(rootDir, rel.endsWith('.md') ? rel : `${rel}.md`)
+              writeFileSync(abs, '', 'utf8')
+              rescanTree()
+              openFileTab(rel.endsWith('.md') ? rel : `${rel}.md`)
+            } catch {
+              // 创建失败静默（权限等）
+            }
+          }
+          setNewFile(null)
+        } else if (key.backspace) {
+          setNewFile((p) => (p === null ? p : { ...p, name: p.name.slice(0, -1) }))
+        } else if (input.length > 0 && !key.ctrl && !key.meta) {
+          setNewFile((p) => (p === null ? p : { ...p, name: p.name + input }))
+        }
+        return
+      }
+      if (key.escape || input === 'q') {
+        setTreeOpen(false)
+        return
+      }
+      if (key.upArrow || input === 'k') {
+        setTreeCursor((i) => Math.max(0, i - 1))
+        return
+      }
+      if (key.downArrow || input === 'j') {
+        setTreeCursor((i) => Math.min(Math.max(0, flat.length - 1), i + 1))
+        return
+      }
+      if (input === 'n') {
+        setNewFile({ active: true, name: '' })
+        return
+      }
+      if (input === 'r') {
+        rescanTree()
+        return
+      }
+      if (cur === undefined) return
+      if (key.return || input === 'l') {
+        if (cur.type === 'file') {
+          openFileTab(cur.rel)
+          setTreeOpen(false)
+        } else {
+          setTreeExpanded((prev) => new Set([...prev, cur.rel]))
+        }
+        return
+      }
+      if (input === 'h' && cur.type === 'dir') {
+        setTreeExpanded((prev) => {
+          const next = new Set(prev)
+          next.delete(cur.rel)
+          return next
+        })
+      }
+    },
+    [treeFlat, treeCursor, newFile, rootDir, rescanTree, openFileTab],
+  )
+
+  // ---- 上下文菜单（MT3b） ----
+  const handleMenuInput = useCallback(
+    (input: string, key: Key): void => {
+      if (key.escape) {
+        setMenuOpen(false)
+        return
+      }
+      const action = MENU_ACTIONS.find((a) => a.key === input)
+      if (action !== undefined) {
+        const s = activeTab()
+        if (s !== null) action.run(s.session)
+        setMenuOpen(false)
+      }
+    },
+    [activeId, tabs], // eslint-disable-line react-hooks/exhaustive-deps
+  )
+
+  const overlayOpen = search.open || outlineOpen || menuOpen || (treeOpen && treeRoot !== null)
+  useInput(
+    (input: string, key: Key) => {
+      if (search.open) handleSearchInput(input, key)
+      else if (menuOpen) handleMenuInput(input, key)
+      else if (outlineOpen) handleOutlineInput(input, key)
+      else if (treeOpen && treeRoot !== null) handleTreeInput(input, key)
+    },
+    { isActive: overlayOpen },
+  )
+
   const preInterceptor = useCallback(
     (input: string, key: Key): boolean => {
       const s = activeTab()
@@ -414,6 +643,18 @@ export function WorkspaceApp({ initialTabs }: { initialTabs: WorkspaceTab[] }): 
             return true
           case '[':
             switchTab(-1)
+            return true
+          case 'e':
+            // 文件树：仅工作区模式（cli 目录参数）
+            if (rootDir !== null && rootDir !== undefined) {
+              setTreeOpen((v) => {
+                if (!v) rescanTree()
+                return !v
+              })
+            }
+            return true
+          case 'm':
+            setMenuOpen((v) => !v)
             return true
           case 'w': {
             closeTab(s.id)
@@ -452,6 +693,22 @@ export function WorkspaceApp({ initialTabs }: { initialTabs: WorkspaceTab[] }): 
     <Box flexDirection="column" height={size.h}>
       <TabBar tabs={tabs} activeId={activeId} dirtyIds={dirtyIds} width={size.w} />
       <Box flexDirection="row">
+        {treeOpen && treeRoot !== null ? (
+          <FileTreePanel
+            flat={treeFlat}
+            cursorIdx={treeCursor}
+            expanded={treeExpanded}
+            rootName={rootDir !== null && rootDir !== undefined ? rootLabel(rootDir) : ''}
+            width={TREE_WIDTH}
+            height={outlineBodyHeight}
+            newFile={newFile}
+            activeRel={
+              tab.path !== null && rootDir !== null && rootDir !== undefined
+                ? tab.path.slice(rootDir.length + 1).replace(/\\/g, '/')
+                : null
+            }
+          />
+        ) : null}
         {outlineOpen ? (
           <OutlinePanel
             items={outlineItems}
@@ -477,6 +734,7 @@ export function WorkspaceApp({ initialTabs }: { initialTabs: WorkspaceTab[] }): 
             registerFlush={registerFlush}
           />
         </Box>
+        {menuOpen ? <ContextMenu /> : null}
       </Box>
     </Box>
   )

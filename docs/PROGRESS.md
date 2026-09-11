@@ -13,7 +13,7 @@
 | M4 主题与打磨 | 主题系统、i18n、设置页、快捷键对齐、视图三件套 | ✅ 完成（超出原范围，含大量 Typora 对齐打磨） |
 | M5 开源发布 | 打包、自动更新、README/贡献指南、发布 | ⬜ 未开始 |
 
-**验证基线**：typecheck 0 错误（node/web/tui 三 project）· eslint 干净 · vitest 33 文件 / 248 用例全绿。
+**验证基线**：typecheck 0 错误（node/web/tui 三 project）· eslint 干净 · vitest 34 文件 / 255 用例全绿。
 
 ## 2. 已完成功能清单
 
@@ -95,11 +95,12 @@
 - **非 TTY 预览升级**：cli CI 输出走完整装配管线，samples/m1、m3 黄金样例经此验证（含 `∑ᵢ₌₁ⁿ` 近似与 `^\infty` 降级路径）。
 - **验证**：typecheck×3 / lint / **239 用例**（+42 MT2 用例，含 18 个表格模式用例）；每键 15.6ms@10k 行（含 tableAt 树解析）。
 
-## 10. MT3a 完成（2026-09-11，壳与效率上半）
+## 10. MT3 完成（2026-09-11，壳与效率，a+b 两单元）
 
 - **多标签**：workspace 总装（单一输入路由 + preInterceptor 全局键拦截）；Alt+]/[ 切换、Alt+W 关闭（关前 flush）；TabBar 按宽截断；`yupmark a.md b.md` 多文件。
 - **查找替换**：^F/^H、⏎/⇧⏎ 命中循环、Alt+R/A 替换当前/全部；当前命中反色 + 其余下划线（layout highlights）；纯函数 8 用例。
 - **大纲**：Alt+O 模态面板（j/k/⏎/Esc），复用内核 extractOutline/activeOutlineItem，光标跟随 cyan。
 - **视图三件套**：Alt+S/F/P（终端无 F 键，键位变更公示于 TUI.md §12c）；直接 dispatch 内核 StateEffect；源码模式行号槽 + 打字机居中滚动；docState 显式挂载视图字段。
-- **验证**：typecheck×3 / lint / **248 用例**（+9）；11.7ms@10k 行。
-- **下一步**：MT3b（文件树 + 上下文菜单）→ MT4（主题/i18n/会话/外部修改）。
+- **MT3b**：文件树（filetree 扫描/展开纯函数 + Alt+E 模态面板 + n 新建文件 + 打开去重）+ 上下文菜单（Alt+M：格式包裹/插入模板，纯事务）。cli 目录参数进工作区模式。
+- **验证**：typecheck×3 / lint / **255 用例**（+16）；11.7ms@10k 行。
+- **下一步**：MT4（主题/i18n/会话/外部修改）。
