@@ -114,3 +114,4 @@
 - **验证**：m3 样例（菱形分支+跳层檐列+自环）经 run-cli.mjs 真实管线目检；解析/渲染/LR/降级 **13 新用例**；typecheck×3 + lint 零告警；基线 **36 文件 / 280 用例**全绿。
 - **下一步**：仍是 MT5（npm 分发 + CI 三平台矩阵）。
 - **整屏闪烁修复（2026-09-11）**：用户实测"光标一动整屏闪"。取证（YUPMARK_DEBUG_OUT 捕获 VT 载荷）双根因：① ink 满屏应用绕过增量 renderer 每帧 clearTerminal 整帧重写 → run-cli.mjs esbuild 插丁放行增量路径（每键只重写变化行）；② Autosaver 误把纯选区移动判脏（subscribe 全量触发 + 基线空串）→ session.subscribeDoc（仅 docChanged）+ 基线=打开时内容。附带：eslint ignores + spikes/**。36 文件 / 280 用例、typecheck×3、lint 全绿（TUI.md §12g）。
+- **MT4.5 mermaid 时序图字符画（2026-09-12）**：用户反馈第二个 mermaid 块（时序图）只显占位框——D18 首期只覆盖 flowchart，本里程碑补齐。`packages/tui/src/mermaid-sequence.ts`：participant/actor + 四类箭头（实线/虚线/叉头/开箭头）+ Note 三定位 + 自环回勾 + title；激活前缀/结构行解析后忽略；未知语法/超限整体 null 占位框（绝不画错图）。layout.ts 三级回落 flowchart → sequence → 占位框。38 文件 / 302 用例全绿（TUI.md §12f+）。

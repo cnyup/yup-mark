@@ -34,6 +34,7 @@ import {
 import { charWidth, wrapCells, type Cell } from './measure'
 import { latexToUnicode } from '../math-unicode'
 import { renderMermaidFlowchart } from '../mermaid-flowchart'
+import { renderMermaidSequence } from '../mermaid-sequence'
 import {
   renderTableGrid,
   renderTableGridFromSource,
@@ -107,8 +108,8 @@ function blockWidgetRows(
     return approx === null ? null : [renderMathBlock(approx, width)]
   }
   if (widget instanceof MermaidWidget) {
-    // flowchart 子集 → ASCII 字符画（D18 路线 B）；其余类型/超限 → 占位框
-    const art = renderMermaidFlowchart(widget.code, width)
+    // flowchart / sequenceDiagram 子集 → ASCII 字符画（D18 路线 B）；其余类型/超限 → 占位框
+    const art = renderMermaidFlowchart(widget.code, width) ?? renderMermaidSequence(widget.code, width)
     if (art !== null) return art
     const info = mermaidInfo(widget.code)
     return [[...renderPlaceholder('▶', `mermaid · ${info.type} · ${info.scale}`, width)]]
