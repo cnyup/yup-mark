@@ -21,9 +21,8 @@ const zh: Dict = {
   'status.line': 'Ln',
   'status.col': 'Col',
   'status.lines': '行',
-  'status.hints': ' ^F 查找 · ^H 替换 · Alt+O 大纲 · Alt+S 源码 · Alt+F 专注 · Alt+P 打字机',
-  'status.tableHints':
-    ' [表格] Tab/⏎ 移动 · Alt+R 加行 · Alt+N 加列 · Alt+D 删行 · Alt+X 删列 · Alt+A 对齐 · Alt+T 删表',
+  'status.hints': ' ^F 查找 · Alt+M 菜单 · Alt+O 大纲',
+  'status.tableHints': ' [表格] Tab 移动 · Alt+R 加行 · Alt+N 加列 · Alt+T 删表',
   'tab.switch': ' Alt+]/[ 切换 · Alt+W 关闭',
   'search.find': ' 查找 ',
   'search.replace': ' 替换 ',
@@ -69,9 +68,8 @@ const en: Dict = {
   'status.line': 'Ln',
   'status.col': 'Col',
   'status.lines': 'lines',
-  'status.hints': ' ^F Find · ^H Replace · Alt+O Outline · Alt+S Source · Alt+F Focus · Alt+P Typewriter',
-  'status.tableHints':
-    ' [Table] Tab/⏎ move · Alt+R row · Alt+N col · Alt+D del row · Alt+X del col · Alt+A align · Alt+T delete',
+  'status.hints': ' ^F Find · Alt+M Menu · Alt+O Outline',
+  'status.tableHints': ' [Table] Tab move · Alt+R row · Alt+N col · Alt+T delete',
   'tab.switch': ' Alt+]/[ switch · Alt+W close',
   'search.find': ' Find ',
   'search.replace': ' Replace ',

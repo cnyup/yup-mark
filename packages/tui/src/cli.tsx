@@ -14,7 +14,7 @@ import { isDirectory } from './filetree'
 import { loadState } from './persist'
 import { setTheme } from './theme'
 import { setLang, detectLang } from './i18n'
-import { existsSync } from 'node:fs'
+import { existsSync, writeFileSync, appendFileSync } from 'node:fs'
 
 const SAMPLE = [
   '# YupMark TUI',
@@ -37,6 +37,26 @@ const SAMPLE = [
 /** 进入备用屏幕 + 隐藏光标 */
 function enterAltScreen(): void {
   process.stdout.write('\x1b[?1049h\x1b[?25l')
+}
+
+/**
+ * 调试设施（YUPMARK_DEBUG_OUT=<文件> 时启用）：经原型链代理 stdout 记录全部
+ * VT 载荷到文件（ESC 以 \u001b 转义）。不替换 process.stdout.write——把代理
+ * 流传给 ink render，退出清理路径不受影响。终端渲染问题（漂移/闪烁）取证用。
+ */
+function makeCapturingStdout(target: string): NodeJS.WriteStream {
+  writeFileSync(target, '')
+  const real = process.stdout
+  const proxy = Object.create(real) as NodeJS.WriteStream
+  proxy.write = ((chunk: string | Uint8Array, cb?: (err?: Error | null) => void): boolean => {
+    try {
+      appendFileSync(target, `[${Date.now()}] ${JSON.stringify(String(chunk))}\n`)
+    } catch {
+      /* 调试通道失败不影响运行 */
+    }
+    return cb === undefined ? real.write(chunk) : real.write(chunk, cb)
+  }) as NodeJS.WriteStream['write']
+  return proxy
 }
 
 /** 退出备用屏幕 + 恢复光标（重复发送无害） */
@@ -105,10 +125,13 @@ async function main(): Promise<void> {
     tabs = [makeTab(null, content)]
   }
   const effectiveRoot = rootDir ?? saved?.rootDir ?? null
-  const instance = render(<WorkspaceApp initialTabs={tabs} rootDir={effectiveRoot} />, {
+  const debugOut = process.env.YUPMARK_DEBUG_OUT
+  const renderOptions = {
     exitOnCtrlC: true,
     incrementalRendering: true,
-  })
+    ...(debugOut === undefined ? {} : { stdout: makeCapturingStdout(debugOut) }),
+  }
+  const instance = render(<WorkspaceApp initialTabs={tabs} rootDir={effectiveRoot} />, renderOptions)
   await instance.waitUntilExit()
 }
 

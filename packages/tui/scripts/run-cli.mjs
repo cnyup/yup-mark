@@ -26,13 +26,14 @@ const stubReactDevtools = {
 }
 
 /**
- * ink 6.8 的两个满屏相关缺陷，打包期修补（锚点失配显式抛错；MT5 发布打包需带上本插件）：
- * 1) 「帧高 ≥ 终端行数」时绕过增量 renderer，每帧 clearTerminal 整帧重写 → 满屏
+ * ink 6.8 的满屏/增量渲染缺陷，打包期修补（锚点失配显式抛错；MT5 发布打包需带上本插件）：
+ * 1) ink.js「帧高 ≥ 终端行数」绕过增量 renderer，每帧 clearTerminal 整帧重写 → 满屏
  *    TUI 整屏闪烁（2026 同步输出在 ConPTY/WSL interop 不透传，清屏可见）。放行增量路径。
- * 2) 非满屏帧会被追加尾随换行，而增量 renderer 的回退光标计算（cursorUp(N-1)、
- *    returnToBottom）全部按「无尾随换行、光标停在最后一行」假设——每帧整体下移一行，
- *    状态栏逐帧堆叠残影（帧高略小于终端行数时触发）。令 isFullscreen 恒为 isTTY，
- *    帧永不带尾随换行，增量假设恒成立。
+ * 2) isFullscreen 判定恒置 isTTY：帧永不带尾随换行，可见行数即内容行数。
+ * 3) log-update.js 增量 renderer 整体替换为「绝对定位绘制」：每帧 ESC[H 归位、
+ *    变化行按绝对坐标写入（ESC[r;1H + ESC[K）、帧变矮清到底（ESC[J）、光标后缀
+ *    绝对定位。原实现对帧的可见行数记账与实际写入不一致（空行折叠/光标屏幕边缘
+ *    钳制），任何帧高变化或 resize 都会累积出整帧漂移 → 状态栏残影/内容重影。
  */
 const patchInkFullscreen = {
   name: 'patch-ink-fullscreen',
@@ -58,8 +59,19 @@ const patchInkFullscreen = {
       }
       return { contents: out, loader: 'js' }
     })
+    build.onLoad({ filter: /[/\\]node_modules[/\\]ink[/\\]build[/\\]log-update\.js$/ }, async (args) => {
+      const js = await readFile(args.path, 'utf8')
+      if (!js.includes('export default logUpdate')) {
+        throw new Error('patch-ink-fullscreen: log-update.js 表面不符（ink 升级后需复核补丁）')
+      }
+      return {
+        contents: await readFile(join(import.meta.dirname, 'log-update-absolute.mjs'), 'utf8'),
+        loader: 'js',
+      }
+    })
   },
 }
+
 
 const tmp = mkdtempSync(join(tmpdir(), 'yupmark-tui-'))
 const outfile = join(tmp, 'cli.mjs')
