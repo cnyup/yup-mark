@@ -41,7 +41,9 @@ export const create = (stream, { showCursor = false } = {}) => {
     str !== previousOutput ||
     (activeCursor !== undefined && cursorChanged(activeCursor, previousCursorPosition))
   const cursorSuffix = (activeCursor) => {
-    if (!activeCursor) return ''
+    // 无光标意图（光标在隐藏行/被块吸收）→ 隐藏终端光标，防止它留在上一帧
+    // 绝对绘制扫过的任意位置形成残影块
+    if (!activeCursor) return hideCursorEscape
     return position(activeCursor.x, activeCursor.y) + showCursorEscape
   }
 

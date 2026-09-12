@@ -98,6 +98,21 @@ describe('绝对定位帧绘制器', () => {
     expect(s.written).not.toContain('hello') // 不重写
   })
 
+  it('光标无意图（隐藏行/被块吸收）：隐藏终端光标而非留在上次位置', () => {
+    const s = fakeStream()
+    const log = create(s)
+    log('hello\nworld')
+    log.setCursorPosition({ x: 2, y: 1 })
+    log('hello\nworld') // 有意图：定位 + 显示
+    s.written = ''
+    log('hello\nworld') // 无新意图：不重绘
+    expect(s.written).toBe('')
+    s.written = ''
+    log('hello\nWORLD') // 内容变化但无光标意图：重绘 + 隐藏光标
+    expect(s.written).toContain(`${ESC}?25l`)
+    expect(s.written).not.toContain(`${ESC}?25h`)
+  })
+
   it('内容与光标均未变：不写任何输出（willRender/返回 false）', () => {
     const s = fakeStream()
     const log = create(s)
