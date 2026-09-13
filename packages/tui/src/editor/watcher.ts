@@ -14,7 +14,8 @@ export function readDiskSnapshot(path: string): DiskSnapshot | null {
   try {
     const st = statSync(path)
     if (!st.isFile()) return null
-    return { mtimeMs: st.mtimeMs, content: readFileSync(path, 'utf8') }
+    // 行尾归一化（与 loadFile 一致）：否则 CRLF 外部改动会被误判为冲突/整文档差异
+    return { mtimeMs: st.mtimeMs, content: readFileSync(path, 'utf8').replace(/\r\n?/g, '\n') }
   } catch {
     return null
   }

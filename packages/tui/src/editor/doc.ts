@@ -9,7 +9,8 @@ export type SaveState = 'saved' | 'dirty' | 'saving'
 const AUTOSAVE_DELAY_MS = 800
 
 export function loadFile(path: string): string {
-  return readFileSync(path, 'utf8')
+  // 行尾归一化：CM6 doc 会把 \r\n 折叠成 \n，原始偏移（如文末 anchor）会越界
+  return readFileSync(path, 'utf8').replace(/\r\n?/g, '\n')
 }
 
 export interface AutosaverHooks {

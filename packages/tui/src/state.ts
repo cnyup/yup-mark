@@ -16,8 +16,10 @@ import { sourceModeField, focusModeField, typewriterModeField } from '@yupmark/l
 
 /** 创建无头编辑状态：doc + 光标位置（默认文末） */
 export function docState(doc: string, anchor?: number): EditorState {
+  // 行尾归一化：CM6 建 doc 时把 \r\n 折叠成 \n，原始长度算的 anchor 会越界
+  const normalized = doc.replace(/\r\n?/g, '\n')
   return EditorState.create({
-    doc,
+    doc: normalized,
     extensions: [
       markdown({
         base: markdownLanguage,
@@ -30,6 +32,6 @@ export function docState(doc: string, anchor?: number): EditorState {
       focusModeField,
       typewriterModeField,
     ],
-    selection: { anchor: anchor ?? doc.length },
+    selection: { anchor: Math.min(anchor ?? normalized.length, normalized.length) },
   })
 }
