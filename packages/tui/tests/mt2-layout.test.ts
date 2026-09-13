@@ -38,6 +38,11 @@ const doc = [
   '  E-->>U: ok',
   '```',
   '',
+  '```mermaid',
+  'flowchart TD',
+  '  A-->B',
+  '```',
+  '',
   '（收尾段落，让光标所在块不在特殊块内）',
 ].join('\n')
 
@@ -87,6 +92,9 @@ describe('layoutViewport MT2 块装配', () => {
     // 时序图（D18 路线 B）：参与者盒 + 生命线 + 箭头
     expect(all.some((r) => r.includes('│ U  ') || r.includes('│ U │'))).toBe(true)
     expect(all.some((r) => r.includes('▶') || r.includes('◀'))).toBe(true)
+    // flowchart：裸节点按矩形渲染（layout 集成路径）
+    expect(all.some((r) => r.includes('│ A │'))).toBe(true)
+    expect(all.some((r) => r.includes('│ B │'))).toBe(true)
   })
 
   it('代码块行获得 token 着色（关键字/字符串/注释有颜色）', () => {

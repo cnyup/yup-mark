@@ -294,7 +294,8 @@ Ink useInput → keys.ts 翻译 → view-less 事务调度
 3. **根治（D19）**：esbuild 插件把 ink 的 `log-update.js` **整文件替换为绝对定位帧绘制器**（`packages/tui/scripts/log-update-absolute.mjs`，同时被单元测试直接导入）：每帧 `ESC[1;1H` 归位 → 变化行按绝对坐标 `ESC[r;1H` + 行内擦除写入 → 帧变矮 `ESC[0J` 清到底 → 光标绝对定位锚定（IME 锚点）。完全不依赖上一帧光标状态，钳制/帧高变化/resize 三类漂移源全部消除。表面与 ink 6.8 一致（render/clear/done/sync/setCursorPosition/isCursorDirty/willRender），锚点校验失配显式抛错。**MT5 发布打包必须带上全部三个补丁**。11 个绘制器单测（模拟流：首帧/增量/变矮/变高/无相对移动/光标锚定/resize/未变不写/clear/sync）。
 4. **状态栏瘦身（用户反馈"信息太多且杂乱"）**：普通模式 hints 减为 `^F 查找 · Alt+M 菜单 · Alt+O 大纲`，表格模式 ` [表格] Tab 移动 · Alt+R 加行 · Alt+N 加列 · Alt+T 删表`（删行/删列/对齐仍可用，见文档与帮助；zh/en 同步）。
 5. **教训（工具链）**：run-cli.mjs 是 node 直接执行的 `.mjs`，**禁写 TS 类型注解**（曾致加载即崩，且因崩溃窗口在备用屏看不到输出，连续误诊三轮——一次误诊还错杀了 capture 设施，后已还原）；调试脚本一律 Write 落盘（heredoc 吞正则反斜杠，两次踩坑）；测试里模板拼接正则要转义 ESC 的 `[`（`ESC[\d…` 中 `[` 会开启字符类使正则永远匹配不上要防的模式）。
-6. 验证基线：37 文件 / 291 用例、typecheck×3、lint 全绿。
+6. **后续补丁（95ac40f）**：光标落在 hidden 装饰行（```ts 围栏等）时 layout.cursor 为 null → 不写光标定位 → 绝对绘制后终端光标残留在帧内任意被扫过的位置（实测叠在时序图参与者盒左上角成反色块）。修复：绘制器对「本帧无光标意图」主动发 `ESC[?25l` 隐藏终端光标。
+7. 验证基线：**38 文件 / 303 用例**、typecheck×3、lint 全绿。
 
 ## 13. 与既有文档的关系
 
