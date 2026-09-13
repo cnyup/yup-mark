@@ -38,11 +38,16 @@
 
 ### 终端版（TUI）
 
-同一个 Markdown 引擎，跑在你的终端里 —— 无需安装桌面应用，`npx` 直接用：
+同一个 Markdown 引擎，跑在你的终端里 —— 无需安装桌面应用：
 
 ```bash
-npx yupmark-tui 文档.md        # 打开/编辑单个文件（自动保存）
-npx yupmark-tui .              # 目录模式（文件树 + 多标签）
+# 方式一：GitHub Release（无需任何账号）
+npm install -g https://github.com/cnyup/yup-mark/releases/download/tui-v0.2.0/yupmark-tui-0.2.0.tgz
+yupmark 文档.md                 # 打开/编辑单个文件（自动保存）
+yupmark .                       # 目录模式（文件树 + 多标签）
+
+# 方式二：npm（已发布 npm 官方源后可用）
+npx yupmark-tui 文档.md
 ```
 
 - **Typora 式渲染态编辑**：光标所在块显源码，移开即渲染（与桌面版同引擎、同语义）
@@ -94,8 +99,13 @@ Developer handoff docs: [CONVENTIONS](docs/CONVENTIONS.md) · [PROGRESS](docs/PR
 The same Markdown engine, running in your terminal — no desktop app required:
 
 ```bash
-npx yupmark-tui notes.md        # open/edit a single file (autosave)
-npx yupmark-tui .               # directory mode (file tree + tabs)
+# Option 1: GitHub Release (no account needed)
+npm install -g https://github.com/cnyup/yup-mark/releases/download/tui-v0.2.0/yupmark-tui-0.2.0.tgz
+yupmark notes.md               # open/edit a single file (autosave)
+yupmark .                      # directory mode (file tree + tabs)
+
+# Option 2: npm (available once published to the registry)
+npx yupmark-tui notes.md
 ```
 
 - **Typora-style live editing**: the block under the cursor shows source; everything else stays rendered (same engine & semantics as the desktop app)

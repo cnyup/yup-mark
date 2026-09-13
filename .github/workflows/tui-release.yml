@@ -1,0 +1,79 @@
+name: TUI Release
+
+# 推 tui-vX.Y.Z 标签 → 跑测试 → 构建发布产物 → 创建 GitHub Release 并附 npm tarball。
+# 与桌面版发布（v* 标签）互不干扰；npm 官方源发布保持手动，两者不冲突。
+
+on:
+  push:
+    tags:
+      - 'tui-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & publish tarball
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Tag must match package version
+        run: |
+          TAGVER="${GITHUB_REF_NAME#tui-v}"
+          PKGVER=$(node -p "require('./packages/tui/package.json').version")
+          if [ "$TAGVER" != "$PKGVER" ]; then
+            echo "::error::tag $GITHUB_REF_NAME != packages/tui version $PKGVER"
+            exit 1
+          fi
+
+      - name: Resolve version
+        run: echo "TUI_VERSION=$(node -p "require('./packages/tui/package.json').version")" >> "$GITHUB_ENV"
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build dist bundle
+        run: node packages/tui/scripts/build-dist.mjs
+
+      - name: Smoke the bundle (non-TTY preview)
+        run: |
+          node packages/tui/dist/cli.mjs samples/m3-demo.md > /tmp/tui-preview.txt
+          grep -q "打开 YupMark" /tmp/tui-preview.txt   # 流程图字符画
+          grep -q "用户" /tmp/tui-preview.txt            # 时序图字符画
+
+      - name: Pack tarball
+        run: |
+          cd packages/tui
+          npm pack --silent
+          mv yupmark-tui-*.tgz "$GITHUB_WORKSPACE/"
+
+      - name: Create release and upload tarball
+        uses: softprops/action-gh-release@v2
+        with:
+          name: yupmark-tui ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          body: |
+            **YupMark TUI** — Typora 风格的终端 Markdown 编辑器（流程图/时序图 ASCII 字符画、表格网格、数学近似、CJK 安全）。
+
+            ## 安装（无需 npm 账号）
+
+            ```bash
+            # 全局安装（得到 yupmark 命令）
+            npm install -g https://github.com/cnyup/yup-mark/releases/download/${{ github.ref_name }}/yupmark-tui-${{ env.TUI_VERSION }}.tgz
+
+            # 或单次运行
+            npx https://github.com/cnyup/yup-mark/releases/download/${{ github.ref_name }}/yupmark-tui-${{ env.TUI_VERSION }}.tgz 文档.md
+            ```
+
+            需要 Node ≥ 20。完整文档见仓库 README 的「终端版（TUI）」章节。
+          files: yupmark-tui-*.tgz
+          fail_on_unmatched_files: true

@@ -123,4 +123,5 @@
 - **MT5 交付**：`packages/tui/scripts/build-dist.mjs` 发布构建（自有代码+打补丁的 ink 内联，2.8MB 单文件；language-data 外置依赖，katex/mermaid 空桩）；`packages/tui/package.json`（name yupmark-tui / bin yupmark / files dist+README / engines ≥20 / 依赖仅 language-data）；README 中英「终端版」章节 + 包页 README；CI `.github/workflows/tui.yml` 三平台矩阵（冒烟/单测/构建/预览断言/tarball 独立安装 npx 验证）。
 - **验证**：npm pack = 614KB；临时目录独立安装 `npx yupmark samples/m3-demo.md` 通过（流程图+时序图字符画正常）；38 文件 / 303 用例、typecheck×3、lint 全绿。
 - **发布**：保持手动——`cd packages/tui && npm publish`（需 npm 账号；CI 只做验证不自动发）。
+- **GitHub Release 通道（2026-09-13 追加，用户选定主通道）**：`.github/workflows/tui-release.yml`——推 `tui-vX.Y.Z` 标签（与桌面 `v*` 不冲突）自动跑测试/构建/冒烟后用 softprops 创建 Release 并附 npm tarball，Release 说明含免账号安装命令；README 安装说明双通道（GitHub Release 为主，npm 源后补）。发布动作 = `git push origin main --follow-tags`（需 GitHub 连通，当前网络需代理）。
 - **TUI 线 MT0-MT5 全部完成**。后续待决：桌面线 P0/P1（⌘F 查找替换、列表 Tab 嵌套等）；v2 清单（图形协议真图、vim 层、单文件二进制、resetBaseline 小修）。

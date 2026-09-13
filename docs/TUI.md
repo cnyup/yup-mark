@@ -304,7 +304,8 @@ Ink useInput → keys.ts 翻译 → view-less 事务调度
 2. **发布构建** `packages/tui/scripts/build-dist.mjs` → `dist/cli.mjs` 单文件（shebang + createRequire 桥）：自有代码（tui + live-cm 源码）与 ink（含三补丁）内联；`@codemirror/language-data` 保持外部依赖（语言包动态 import 运行时加载，内联会饿死懒加载且产物暴涨）；LICENSE 随包复制。实测 2.8MB / 635 模块。
 3. **包定义** `packages/tui/package.json`：name `yupmark-tui`、bin `yupmark`（§11 U2 定案）、files dist+README、engines node≥20、dependencies 仅 `@codemirror/language-data`（构建期依赖 ink/react/live-cm 在 devDependencies，workspace 链接）。`npm pack` = 614KB 压缩包。
 4. **验证**：临时目录独立安装 tarball → `npx yupmark samples/m3-demo.md` 通过（50 包依赖树、流程图+时序图字符画正常）。
-5. **CI** `.github/workflows/tui.yml`：ubuntu/macos/windows 矩阵——headless 冒烟 + 全量单测 + dist 构建 + 产物非 TTY 预览断言（含两张字符画）+ tarball 独立安装 npx 验证 + dist 产物上传。发布本身保持手动（`cd packages/tui && npm publish`，需 npm 账号；不做自动发布）。
+5. **CI** `.github/workflows/tui.yml`：ubuntu/macos/windows 矩阵——headless 冒烟 + 全量单测 + dist 构建 + 产物非 TTY 预览断言（含两张字符画）+ tarball 独立安装 npx 验证 + dist 产物上传。npm 官方源发布保持手动（`cd packages/tui && npm publish`，需 npm 账号；不做自动发布）。
+5b. **GitHub Release 通道（用户选定为主发布通道）**：`.github/workflows/tui-release.yml`——推 `tui-vX.Y.Z` 标签自动测试/构建/冒烟后经 softprops 创建 Release 附 tarball（免 npm 账号，安装走 Release 链接）；标签与桌面 `v*` 触发模式隔离，版本守卫要求 tag 与 packages/tui 版本一致。
 6. **README**：主 README 中英各加「终端版/TUI」章节（npx 用法 + 特性 + 键位表指向包 README）；`packages/tui/README.md` 为 npm 包页。
 7. 基线：38 文件 / 303 用例、typecheck×3、lint 全绿（dist 产物已加入 eslint ignores）。
 
