@@ -45,10 +45,18 @@ jobs:
       - name: Smoke the bundle (non-TTY preview)
         shell: bash
         run: |
-          node packages/tui/dist/cli.mjs samples/m3-demo.md > /tmp/tui-preview.txt
-          grep -q "M3" /tmp/tui-preview.txt
-          grep -q "用户" /tmp/tui-preview.txt   # 时序图字符画已渲染
-          grep -q "打开 YupMark" /tmp/tui-preview.txt  # 流程图字符画已渲染
+          if ! node packages/tui/dist/cli.mjs samples/m3-demo.md > preview.txt 2> preview-err.txt; then
+            echo "::error::cli exited nonzero: $(head -c 400 preview-err.txt)"
+            exit 1
+          fi
+          for pat in "M3" "用户" "打开 YupMark"; do
+            if ! grep -q "$pat" preview.txt; then
+              echo "::error::pattern missing in preview: $pat"
+              echo "::error::preview head: $(head -c 500 preview.txt | tr '\n' ' ')"
+              exit 1
+            fi
+          done
+          rm -f preview.txt preview-err.txt
 
       - name: Verify bin resolution (npx)
         shell: bash
