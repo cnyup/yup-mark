@@ -3,13 +3,45 @@
   "version": "0.2.0",
   "description": "YupMark in the terminal — Typora-style live-render Markdown TUI editor powered by @yupmark/live-cm",
   "license": "MIT",
-  "private": true,
   "type": "module",
+  "author": "cnyup",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cnyup/yup-mark.git",
+    "directory": "packages/tui"
+  },
+  "bugs": {
+    "url": "https://github.com/cnyup/yup-mark/issues"
+  },
+  "homepage": "https://github.com/cnyup/yup-mark#readme",
+  "keywords": [
+    "markdown",
+    "editor",
+    "tui",
+    "terminal",
+    "typora",
+    "wysiwyg",
+    "cjk"
+  ],
   "scripts": {
     "smoke": "node scripts/headless-smoke.mjs",
-    "start": "node scripts/run-cli.mjs"
+    "start": "node scripts/run-cli.mjs",
+    "build": "node scripts/build-dist.mjs"
+  },
+  "bin": {
+    "yupmark": "dist/cli.mjs"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
+    "@codemirror/language-data": "^6.5.2"
+  },
+  "devDependencies": {
     "@yupmark/live-cm": "*",
     "ink": "^6.7.0",
     "react": "^19.2.8",

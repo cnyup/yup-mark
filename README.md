@@ -36,6 +36,21 @@
 - [docs/PROGRESS.md](docs/PROGRESS.md) —— 当前进度与验证基线
 - [docs/ROADMAP.md](docs/ROADMAP.md) —— 后续目标与完成定义
 
+### 终端版（TUI）
+
+同一个 Markdown 引擎，跑在你的终端里 —— 无需安装桌面应用，`npx` 直接用：
+
+```bash
+npx yupmark-tui 文档.md        # 打开/编辑单个文件（自动保存）
+npx yupmark-tui .              # 目录模式（文件树 + 多标签）
+```
+
+- **Typora 式渲染态编辑**：光标所在块显源码，移开即渲染（与桌面版同引擎、同语义）
+- **扩展语法**：表格网格（可编辑）、数学公式 Unicode 近似、**mermaid 流程图/时序图 ASCII 字符画**、代码块高亮
+- **CJK 安全**：中文宽字符的列定位、软换行、表格网格永不错位
+- **主题与双语**：7 套配色（与桌面同源）+ 中英界面（`Alt+,` 设置）
+- 跨平台（Windows Terminal / iTerm2 / kitty / 终端均可），Node ≥ 20
+
 ### 开发
 
 ```bash
@@ -73,6 +88,21 @@ Grab the latest build from [Releases](https://github.com/cnyup/yup-mark/releases
 **Current status: M4 complete (polishing)** — Typora-style live rendering (in-place marker reveal), file management, math/mermaid/tables, view modes (source ⌘/ · focus F8 · typewriter F9), theme system, bilingual UI, Typora-aligned shortcuts.
 
 Developer handoff docs: [CONVENTIONS](docs/CONVENTIONS.md) · [PROGRESS](docs/PROGRESS.md) · [ROADMAP](docs/ROADMAP.md). See [docs/DESIGN.md](docs/DESIGN.md) for the full design document.
+
+### Terminal edition (TUI)
+
+The same Markdown engine, running in your terminal — no desktop app required:
+
+```bash
+npx yupmark-tui notes.md        # open/edit a single file (autosave)
+npx yupmark-tui .               # directory mode (file tree + tabs)
+```
+
+- **Typora-style live editing**: the block under the cursor shows source; everything else stays rendered (same engine & semantics as the desktop app)
+- **Extended syntax**: editable table grids, math via Unicode approximation, **mermaid flowcharts & sequence diagrams as ASCII art**, code highlighting
+- **CJK-safe**: column tracking, soft wrap and table grids never misalign on wide characters
+- **Themes & bilingual UI**: 7 palettes (same as desktop) + English/Chinese (`Alt+,` for settings)
+- Cross-platform (Windows Terminal / iTerm2 / kitty / …), Node ≥ 20
 
 ### Tech Stack
 

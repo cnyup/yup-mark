@@ -1,0 +1,69 @@
+name: TUI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/tui/**'
+      - 'packages/live-cm/**'
+      - '.github/workflows/tui.yml'
+  pull_request:
+    paths:
+      - 'packages/tui/**'
+      - 'packages/live-cm/**'
+      - '.github/workflows/tui.yml'
+  workflow_dispatch:
+
+jobs:
+  test-build-smoke:
+    name: ${{ matrix.os }} · test + build + smoke
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Headless smoke (pure Node)
+        run: node packages/tui/scripts/headless-smoke.mjs
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build dist bundle
+        run: node packages/tui/scripts/build-dist.mjs
+
+      - name: Smoke the bundle (non-TTY preview)
+        shell: bash
+        run: |
+          node packages/tui/dist/cli.mjs samples/m3-demo.md > /tmp/tui-preview.txt
+          grep -q "M3" /tmp/tui-preview.txt
+          grep -q "用户" /tmp/tui-preview.txt   # 时序图字符画已渲染
+          grep -q "打开 YupMark" /tmp/tui-preview.txt  # 流程图字符画已渲染
+
+      - name: Verify bin resolution (npx)
+        shell: bash
+        run: |
+          cd packages/tui
+          npm pack --silent
+          mkdir -p /tmp/tui-install && cd /tmp/tui-install
+          npm init -y >/dev/null
+          TGZ=$(ls "$GITHUB_WORKSPACE"/packages/tui/yupmark-tui-*.tgz | head -1)
+          npm install "$TGZ" --no-audit --no-fund
+          npx yupmark "$GITHUB_WORKSPACE/samples/m3-demo.md" | grep -q "M3"
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: yupmark-tui-${{ matrix.os }}
+          path: packages/tui/dist/cli.mjs
+          if-no-files-found: error

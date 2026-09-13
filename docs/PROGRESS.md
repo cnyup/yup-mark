@@ -115,3 +115,12 @@
 - **下一步**：仍是 MT5（npm 分发 + CI 三平台矩阵）。
 - **整屏闪烁修复（2026-09-11）**：用户实测"光标一动整屏闪"。取证（YUPMARK_DEBUG_OUT 捕获 VT 载荷）双根因：① ink 满屏应用绕过增量 renderer 每帧 clearTerminal 整帧重写 → run-cli.mjs esbuild 插丁放行增量路径（每键只重写变化行）；② Autosaver 误把纯选区移动判脏（subscribe 全量触发 + 基线空串）→ session.subscribeDoc（仅 docChanged）+ 基线=打开时内容。附带：eslint ignores + spikes/**。36 文件 / 280 用例、typecheck×3、lint 全绿（TUI.md §12g）。
 - **MT4.5 mermaid 时序图字符画（2026-09-12）**：用户反馈第二个 mermaid 块（时序图）只显占位框——D18 首期只覆盖 flowchart，本里程碑补齐。`packages/tui/src/mermaid-sequence.ts`：participant/actor + 四类箭头（实线/虚线/叉头/开箭头）+ Note 三定位 + 自环回勾 + title；激活前缀/结构行解析后忽略；未知语法/超限整体 null 占位框（绝不画错图）。layout.ts 三级回落 flowchart → sequence → 占位框。38 文件 / 302 用例全绿（TUI.md §12f+）。
+
+## 12. MT5 完成（2026-09-13，npm 分发——TUI 线收官）
+
+- **渲染收尾（11-13 日间随用户实测连续修复）**：整屏闪烁（ink 满屏 clearTerminal）→ 状态栏残影（尾随换行 off-by-one）→ 整帧漂移根治（log-update 整文件替换为绝对定位绘制器 + 12 单测）→ 数学近似平排回退（m3 三大公式全近似）→ 隐藏行光标残影块（无意图时 ESC[?25l）→ 状态栏瘦身。补丁抽共享模块 `ink-patches.mjs`（开发/发布共用）。全程取证通道 YUPMARK_DEBUG_OUT（详见 TUI.md §12g）。
+- **收口巡检（a0cb2e3）**：mt2 补回 flowchart 集成覆盖、基线数字对齐、npm tui 脚本（`npm run tui -- <file>`）、删临时启动脚本。
+- **MT5 交付**：`packages/tui/scripts/build-dist.mjs` 发布构建（自有代码+打补丁的 ink 内联，2.8MB 单文件；language-data 外置依赖，katex/mermaid 空桩）；`packages/tui/package.json`（name yupmark-tui / bin yupmark / files dist+README / engines ≥20 / 依赖仅 language-data）；README 中英「终端版」章节 + 包页 README；CI `.github/workflows/tui.yml` 三平台矩阵（冒烟/单测/构建/预览断言/tarball 独立安装 npx 验证）。
+- **验证**：npm pack = 614KB；临时目录独立安装 `npx yupmark samples/m3-demo.md` 通过（流程图+时序图字符画正常）；38 文件 / 303 用例、typecheck×3、lint 全绿。
+- **发布**：保持手动——`cd packages/tui && npm publish`（需 npm 账号；CI 只做验证不自动发）。
+- **TUI 线 MT0-MT5 全部完成**。后续待决：桌面线 P0/P1（⌘F 查找替换、列表 Tab 嵌套等）；v2 清单（图形协议真图、vim 层、单文件二进制、resetBaseline 小修）。

@@ -185,7 +185,8 @@ Ink useInput → keys.ts 翻译 → view-less 事务调度
 | **MT3 壳与效率** ✅（2026-09-11，a+b 两单元） | MT3a：多标签 + 查找替换 + 大纲 + 视图三件套；MT3b：文件树（扫描/展开/新建）+ 上下文菜单 | 查找替换/大纲/三件套/文件树/菜单共 16 用例 + workspace 冒烟；视图键位因终端无 F 键改 Alt 系（§12c） |
 | **MT4 主题与收口** ✅（2026-09-11） | 7 主题调色板 + i18n + 会话恢复 + 外部修改检测（二选一弹窗）+ 设置栏 | 7 主题 token 全解析单测（同源桌面主色）；外部修改判定纯函数 4 路径；267 用例全绿 |
 | **MT4.5 mermaid 字符画** ✅（2026-09-11，D18 路线 B） | flowchart 子集 ASCII 渲染：解析器（形状/边标签/链式）+ 最长路径分层 + 重心排序 + 通道/檐列布线 + 降级护栏 | m3 样例字符画经 CLI 管线验证（含跳层檐列/自环/回边）；非 flowchart/超限回落占位框；13 新用例（280 全绿） |
-| **MT5 分发** | npm 包 `yupmark-tui`（bin `yupmark`）+ README 双语 TUI 章节 + CI 加 TUI 构建矩阵（Linux/macOS/Windows） | `npx yupmark-tui` 三平台开箱即用；单文件二进制（bun/pkg）列 v2 |
+| **MT4.6 时序图字符画** ✅（2026-09-12，D18 扩展） | sequenceDiagram 子集 ASCII 渲染（§12f+） | m3 第二块时序图经真实管线验证；11 新用例 |
+| **MT5 分发** ✅（2026-09-13，§12h） | npm 包 `yupmark-tui`（bin `yupmark`）+ README 双语 TUI 章节 + CI 三平台矩阵 | `npm pack` + 独立安装 `npx yupmark` 验证通过（Ubuntu/macOS/Windows 矩阵由 CI 承担）；单文件二进制（bun/pkg）列 v2 |
 
 依赖顺序 MT0→MT5；每个 MT 结束更新 PROGRESS.md。桌面线 ROADMAP（⌘F、列表 Tab 等）与 MT 系列共享内核改动（列表 Tab 嵌坐在 blockOps 上，两端同一次实现）。
 
@@ -206,7 +207,7 @@ Ink useInput → keys.ts 翻译 → view-less 事务调度
 | # | 事项 | 默认建议 | 备选 |
 |---|------|----------|------|
 | U1 | monorepo 工具 | npm workspaces（零新依赖） | pnpm workspace |
-| U2 | npm 包名 | `yupmark-tui`（bin 名 `yupmark`） | `@yupmark/tui` scope |
+| U2 | npm 包名 | ✅ 定案（MT5）：`yupmark-tui`（bin 名 `yupmark`） | `@yupmark/tui` scope |
 | U3 | 单文件二进制分发 | v2（bun compile） | pkg / 海海编译 |
 | U4 | vim 键位层 | v2 可选层 | 不做 |
 | U5 | 终端图形协议（kitty/sixel 图片渲染） | v2 | 不做 |
@@ -296,6 +297,16 @@ Ink useInput → keys.ts 翻译 → view-less 事务调度
 5. **教训（工具链）**：run-cli.mjs 是 node 直接执行的 `.mjs`，**禁写 TS 类型注解**（曾致加载即崩，且因崩溃窗口在备用屏看不到输出，连续误诊三轮——一次误诊还错杀了 capture 设施，后已还原）；调试脚本一律 Write 落盘（heredoc 吞正则反斜杠，两次踩坑）；测试里模板拼接正则要转义 ESC 的 `[`（`ESC[\d…` 中 `[` 会开启字符类使正则永远匹配不上要防的模式）。
 6. **后续补丁（95ac40f）**：光标落在 hidden 装饰行（```ts 围栏等）时 layout.cursor 为 null → 不写光标定位 → 绝对绘制后终端光标残留在帧内任意被扫过的位置（实测叠在时序图参与者盒左上角成反色块）。修复：绘制器对「本帧无光标意图」主动发 `ESC[?25l` 隐藏终端光标。
 7. 验证基线：**38 文件 / 303 用例**、typecheck×3、lint 全绿。
+
+## 12h. MT5 落地备忘：npm 分发（2026-09-13，TUI 线收官）
+
+1. **补丁共享化**：esbuild 插件从 run-cli.mjs 抽到 `packages/tui/scripts/ink-patches.mjs`（开发运行与发布构建共用；含 react-devtools/katex/mermaid 空桩——TUI 路径不执行 DOM 渲染，mermaid 桩的动态 import 若被调用会 reject 而非崩溃）。
+2. **发布构建** `packages/tui/scripts/build-dist.mjs` → `dist/cli.mjs` 单文件（shebang + createRequire 桥）：自有代码（tui + live-cm 源码）与 ink（含三补丁）内联；`@codemirror/language-data` 保持外部依赖（语言包动态 import 运行时加载，内联会饿死懒加载且产物暴涨）；LICENSE 随包复制。实测 2.8MB / 635 模块。
+3. **包定义** `packages/tui/package.json`：name `yupmark-tui`、bin `yupmark`（§11 U2 定案）、files dist+README、engines node≥20、dependencies 仅 `@codemirror/language-data`（构建期依赖 ink/react/live-cm 在 devDependencies，workspace 链接）。`npm pack` = 614KB 压缩包。
+4. **验证**：临时目录独立安装 tarball → `npx yupmark samples/m3-demo.md` 通过（50 包依赖树、流程图+时序图字符画正常）。
+5. **CI** `.github/workflows/tui.yml`：ubuntu/macos/windows 矩阵——headless 冒烟 + 全量单测 + dist 构建 + 产物非 TTY 预览断言（含两张字符画）+ tarball 独立安装 npx 验证 + dist 产物上传。发布本身保持手动（`cd packages/tui && npm publish`，需 npm 账号；不做自动发布）。
+6. **README**：主 README 中英各加「终端版/TUI」章节（npx 用法 + 特性 + 键位表指向包 README）；`packages/tui/README.md` 为 npm 包页。
+7. 基线：38 文件 / 303 用例、typecheck×3、lint 全绿（dist 产物已加入 eslint ignores）。
 
 ## 13. 与既有文档的关系
 
