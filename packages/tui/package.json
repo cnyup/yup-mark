@@ -36,7 +36,7 @@
     "README.md"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "dependencies": {
     "@codemirror/language-data": "^6.5.2"
