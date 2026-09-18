@@ -529,9 +529,10 @@ body {
 }
 
 .file-tree--empty {
-  display: flex;
+  /* 空态在侧栏体内水平+垂直居中（.file-tree 已是 column flex，justify 作用在纵轴） */
+  align-items: center;
   justify-content: center;
-  padding-top: 32px;
+  padding-top: 0;
 }
 
 .file-tree__empty-actions {
@@ -541,16 +542,21 @@ body {
 }
 
 .file-tree__open-btn {
-  padding: 6px 14px;
+  min-width: 140px;
+  padding: 7px 14px;
   border: 1px solid var(--border-color);
   border-radius: 6px;
   background: var(--bg-color);
+  color: var(--text-color);
+  text-align: center;
   cursor: pointer;
   font-size: 13px;
+  transition: border-color 0.12s ease, color 0.12s ease;
 }
 
-.file-tree__open-btn--secondary {
-  color: var(--meta-content-color);
+.file-tree__open-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .file-tree__hint {

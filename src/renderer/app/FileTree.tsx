@@ -138,7 +138,7 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
           </button>
           <button
             type="button"
-            className="file-tree__open-btn file-tree__open-btn--secondary"
+            className="file-tree__open-btn"
             onClick={() =>
               void window.yupmark.openFileDialog().then((res) => {
                 if (res.ok) useWorkspaceStore.getState().openDoc(res.data.path, res.data.content)
