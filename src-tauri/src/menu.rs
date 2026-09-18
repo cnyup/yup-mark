@@ -360,11 +360,15 @@ pub fn rebuild(app: &AppHandle) -> Result<(), String> {
     let about = mitem(app, "help:about", l.about, None, true)?;
     let help_menu = Submenu::with_items(app, l.help, true, &[&about]).map_err(|e| e.to_string())?;
 
-    let menus: Vec<Submenu<Wry>> = vec![file_menu, edit_menu, view_menu, window_menu, help_menu];
+    // mac cfg 块内的 insert(0, app_menu) 需要 mut；其余平台无写入（allow 抹平 unused_mut 警告）
+    #[allow(unused_mut)]
+    let mut menus: Vec<Submenu<Wry>> = vec![file_menu, edit_menu, view_menu, window_menu, help_menu];
     #[cfg(target_os = "macos")]
     {
         // role:appMenu（mac 专属：关于/服务/隐藏/退出）
-        let app_about = PredefinedMenuItem::about(app, Some(tauri::menu::AboutMetadata::default()))
+        // 注意平台签名分叉：mac 上 about 是 3 参（多 text: Option<&str>），其余平台 2 参——
+        // 此处已在 mac cfg 块内，传 None 用默认应用名
+        let app_about = PredefinedMenuItem::about(app, None, Some(tauri::menu::AboutMetadata::default()))
             .map_err(|e| e.to_string())?;
         let services = PredefinedMenuItem::services(app, None).map_err(|e| e.to_string())?;
         let hide = PredefinedMenuItem::hide(app, None).map_err(|e| e.to_string())?;

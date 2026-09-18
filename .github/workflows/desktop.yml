@@ -77,3 +77,20 @@ jobs:
 
       - name: Tauri build（Linux：AppImage + deb 打包链路验证）
         run: npx tauri build
+
+  # macOS 编译检查：捕获平台签名分叉（如 PredefinedMenuItem::about 在 mac 是 3 参），
+  # ubuntu 单平台 verify 抓不到这类错误；只 check 不打包
+  check-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: cargo check（debug，无需前端产物）
+        working-directory: src-tauri
+        run: cargo check
