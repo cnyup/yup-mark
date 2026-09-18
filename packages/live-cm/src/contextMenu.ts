@@ -93,12 +93,19 @@ interface MenuEntry {
 
 let menuEl: HTMLElement | null = null
 let overlayEl: HTMLElement | null = null
+/** 关闭器武装定时器：WebKit 右键事件序里 mousedown 可能晚于 contextmenu，
+ *  同步武装会被同一次右键的 mousedown 秒关（表现为菜单闪一下即无） */
+let closeArmTimer: ReturnType<typeof setTimeout> | null = null
 
 function closeMenu(): void {
   menuEl?.remove()
   overlayEl?.remove()
   menuEl = null
   overlayEl = null
+  if (closeArmTimer !== null) {
+    clearTimeout(closeArmTimer)
+    closeArmTimer = null
+  }
   document.removeEventListener('mousedown', onDocDown, true)
 }
 
@@ -466,6 +473,9 @@ export function openEditorContextMenu(view: EditorView, x: number, y: number): b
     const panelH = panel.querySelectorAll('button').length * 29 + 12
     if (window.innerHeight - sub.getBoundingClientRect().bottom < panelH) sub.classList.add('ctx-sub--up')
   }
-  document.addEventListener('mousedown', onDocDown, true)
+  closeArmTimer = setTimeout(() => {
+    closeArmTimer = null
+    document.addEventListener('mousedown', onDocDown, true)
+  }, 0)
   return true
 }
