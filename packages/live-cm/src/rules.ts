@@ -1,7 +1,7 @@
 /**
  * 实时渲染规则表（docs/DESIGN.md §4.1.3，Typora 式）：
- * 所有块保持渲染态编辑 —— 样式 mark 永远生效；光标所在块的行级标记（# >）淡显；
- * 行内标记（** ` []()）按选区是否落入语法跨度就近淡显；非活跃块完全隐藏标记。
+ * 所有块保持渲染态编辑 —— 样式 mark 永远生效；Markdown 标记默认隐藏；
+ * 只有显式源码模式或 IME 组合输入才临时保留源码。
  * 整节点替换 Widget（表格/图片/数学/分割线）在光标进入其语法范围时显源码。
  * 块级样式（标题字号/引用边线/代码块底色）始终生效。IME 组合区间强制纯源码防打断。
  * 本模块是纯函数（EditorState in → Decoration out），可无头测试。
@@ -78,24 +78,15 @@ export function buildLiveDecorations(
   /** 范围末端若跟着空格则一并吞掉（如 `# ` / `> ` / `- `） */
   const withSpace = (to: number): number => (doc.sliceString(to, to + 1) === ' ' ? to + 1 : to)
 
-  /** mark 所在块是否活跃（活跃 = 行级标记淡显而非隐藏） */
+  /** mark 所在块是否活跃（用于整块 Widget 是否回到源码态） */
   const shown = (pos: number): boolean => {
     const b = nearestBlock(blocks, pos)
     return b === null || active.has(b)
   }
 
-  /** 选区与行内区间相交：行内标记的淡显判定（Typora 式就近揭示，非整块） */
-  const inlineActive = (from: number, to: number): boolean =>
-    state.selection.ranges.some((r) => r.from < to && r.to > from)
-
   /** IME 组合冻结区间：保持纯源码，避免组合期间装饰 DOM 切换打断输入法 */
   const frozen = (from: number, to: number): boolean =>
     extraActive.some((f) => f.from <= from && f.to >= to)
-
-  /** 活跃态淡显标记（文字保留在 DOM，仅淡化颜色）；源码模式下不着色（语法高亮已着色） */
-  const dim = (from: number, to: number): void => {
-    if (!sourceMode && to > from) out.push(Decoration.mark({ class: 'cm-mark-dim' }).range(from, to))
-  }
 
   const lineClass = (from: number, to: number, cls: string): void => {
     let pos = from
@@ -119,7 +110,7 @@ export function buildLiveDecorations(
     let skipChildren = false
     switch (node.name) {
       case 'InlineMath': {
-        if (!inlineActive(node.from, node.to)) {
+        if (!frozen(node.from, node.to)) {
           const tex = doc.sliceString(node.from + 1, node.to - 1)
           out.push(Decoration.replace({ widget: new MathWidget(tex, false), block: false }).range(node.from, node.to))
         }
@@ -127,7 +118,7 @@ export function buildLiveDecorations(
       }
       case 'Paragraph': {
         // 块级数学：整个段落就是 $$...$$（无自定义块级解析器的轻量方案）
-        if (!shown(node.from)) {
+        if (!frozen(node.from, node.to)) {
           const raw = doc.sliceString(node.from, node.to)
           if (raw.startsWith('$$') && raw.endsWith('$$') && raw.length > 4) {
             out.push(
@@ -212,9 +203,8 @@ export function buildLiveDecorations(
         lineClass(node.from, node.to, `cm-h-line cm-h${level}`)
         const mark = node.getChild('HeaderMark')
         if (mark && !frozen(mark.from, mark.to)) {
-          // 光标所在块：# 淡显（Typora 式）；离开后隐藏
-          if (shown(mark.from)) dim(mark.from, mark.to)
-          else hide(mark.from, withSpace(mark.to))
+          // Typora 式：普通光标移动不展开行级源码标记；显式源码模式仍全显。
+          hide(mark.from, withSpace(mark.to))
         }
         break
       }
@@ -223,8 +213,7 @@ export function buildLiveDecorations(
           out.push(Decoration.mark({ class: 'cm-strong' }).range(node.from, node.to))
           for (const c of namedChildren(node)) {
             if (c.name === 'EmphasisMark') {
-              if (inlineActive(node.from, node.to)) dim(c.from, c.to)
-              else hide(c.from, c.to)
+              hide(c.from, c.to)
             }
           }
         }
@@ -235,8 +224,7 @@ export function buildLiveDecorations(
           out.push(Decoration.mark({ class: 'cm-em' }).range(node.from, node.to))
           for (const c of namedChildren(node)) {
             if (c.name === 'EmphasisMark') {
-              if (inlineActive(node.from, node.to)) dim(c.from, c.to)
-              else hide(c.from, c.to)
+              hide(c.from, c.to)
             }
           }
         }
@@ -247,8 +235,7 @@ export function buildLiveDecorations(
           out.push(Decoration.mark({ class: 'cm-strike' }).range(node.from, node.to))
           for (const c of namedChildren(node)) {
             if (c.name === 'StrikethroughMark') {
-              if (inlineActive(node.from, node.to)) dim(c.from, c.to)
-              else hide(c.from, c.to)
+              hide(c.from, c.to)
             }
           }
         }
@@ -259,8 +246,7 @@ export function buildLiveDecorations(
           out.push(Decoration.mark({ class: 'cm-inline-code' }).range(node.from, node.to))
           for (const c of namedChildren(node)) {
             if (c.name === 'CodeMark') {
-              if (inlineActive(node.from, node.to)) dim(c.from, c.to)
-              else hide(c.from, c.to)
+              hide(c.from, c.to)
             }
           }
         }
@@ -268,7 +254,6 @@ export function buildLiveDecorations(
       }
       case 'Link': {
         if (frozen(node.from, node.to)) break
-        const reveal = inlineActive(node.from, node.to)
         const kids = namedChildren(node)
         let firstMark: SyntaxNode | null = null
         let secondMark: SyntaxNode | null = null
@@ -276,8 +261,7 @@ export function buildLiveDecorations(
         for (const c of kids) {
           if (c.name === 'Image') hasImage = true
           if (c.name === 'LinkMark' || c.name === 'URL' || c.name === 'LinkTitle') {
-            if (reveal) dim(c.from, c.to)
-            else hide(c.from, c.to)
+            hide(c.from, c.to)
           }
           if (c.name === 'LinkMark') {
             if (!firstMark) firstMark = c
@@ -291,7 +275,7 @@ export function buildLiveDecorations(
         break
       }
       case 'Image': {
-        if (!inlineActive(node.from, node.to)) {
+        if (!frozen(node.from, node.to)) {
           const { alt, src } = parseImageParts(doc.sliceString(node.from, node.to))
           out.push(
             Decoration.replace({
@@ -308,13 +292,12 @@ export function buildLiveDecorations(
       }
       case 'QuoteMark': {
         if (!frozen(node.from, node.to)) {
-          if (shown(node.from)) dim(node.from, node.to)
-          else hide(node.from, withSpace(node.to))
+          hide(node.from, withSpace(node.to))
         }
         break
       }
       case 'HorizontalRule': {
-        if (!shown(node.from)) {
+        if (!frozen(node.from, node.to)) {
           out.push(Decoration.replace({ widget: new HrWidget(), block: true }).range(node.from, node.to))
         }
         break

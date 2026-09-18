@@ -5,7 +5,7 @@
  * 通过 props 接入全局键拦截器、搜索高亮、底部浮层（搜索条）与输入激活开关。
  *
  * 渲染每帧：session 版本（useSyncExternalStore）→ layoutViewport（视口行装配）
- * → ink 渲染；光标 = 反色格（视觉）+ useCursor 终端光标（IME preedit 锚点）。
+ * → ink 渲染；光标由 useCursor 的真实终端插入符定位。
  * 滚动决策在输入/resize 事件里完成（不触碰渲染期 ref 规则）。
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'

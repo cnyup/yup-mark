@@ -6,7 +6,7 @@
  *   → 视口内逐行装配：cells（普通行）/ block（多行 widget：表格网格、
  *     块级数学、占位框、HR）/ absorbed（widget 覆盖的续行，不产出行）
  *   → CJK 宽度贪心软换行 → 视觉行（样式段收敛）
- *   → 光标反色叠加 + 视口内 (x,y) 坐标（useCursor 的 IME 锚点）
+ *   → 视口内 (x,y) 光标坐标（useCursor 的终端插入符定位）
  *   → 代码块 token 经 lezer highlightTree 转 ANSI 色（MT2）
  *
  * 性能约定：装饰按视口区间装配（内核 range 参数）；行内 token 高亮仅收集
@@ -72,7 +72,7 @@ export interface SearchHighlight {
 
 export interface ViewportLayout {
   rows: LayoutRow[]
-  /** 光标在视口内的坐标（x=列，y=行下标）；供反色格与 useCursor 共用 */
+  /** 光标在视口内的坐标（x=列，y=行下标）；供 useCursor 定位真实终端光标 */
   cursor: { x: number; y: number } | null
   /** 光标所在视觉行的宽度（打字机模式预留） */
   cursorRowWidth: number
@@ -297,6 +297,14 @@ function cellsToSegments(cells: StyledCell[]): RenderSegment[] {
   return segs
 }
 
+function cursorCellIndex(cells: StyledCell[], cursorPos: number): number {
+  const exact = cells.findIndex((c) => c.docPos === cursorPos)
+  if (exact >= 0) return exact
+  const next = cells.findIndex((c) => c.docPos > cursorPos)
+  if (next >= 0) return next
+  return cells.length - 1
+}
+
 export interface LayoutOptions {
   width: number
   height: number
@@ -351,8 +359,8 @@ function computeViewport(state: EditorState, opts: LayoutOptions): ViewportLayou
   let cursorRowWidth = 0
   const blockCache = new Map<unknown, RenderSegment[][] | null>()
 
-  // 光标所在表格：网格编辑模式覆盖（源码行被网格整体替换；方案 A，TUI.md §5）
-  const activeTable = tableAt(state, cursorPos)
+  // 源码模式必须保留原始表格文本；实时渲染态才使用网格编辑覆盖。
+  const activeTable = sourceMode ? null : tableAt(state, cursorPos)
   const activeParsed = activeTable === null ? null : parsedForRender(activeTable)
   const activeCursor =
     activeTable === null || activeParsed === null ? null : cellAt(activeTable, cursorPos)
@@ -417,11 +425,8 @@ function computeViewport(state: EditorState, opts: LayoutOptions): ViewportLayou
         }
       }
     }
-    // 光标反色叠加
-    const cursorCellIdx = cells.findIndex((c) => c.docPos === cursorPos)
-    if (cursorCellIdx >= 0) {
-      cells[cursorCellIdx] = { ...cells[cursorCellIdx], style: { ...cells[cursorCellIdx].style, inverse: true } }
-    }
+    // 真实终端光标由 useCursor 定位；这里仅计算坐标，不绘制反色模拟插入符。
+    const cursorCellIdx = cursorPos >= line.from && cursorPos <= line.to ? cursorCellIndex(cells, cursorPos) : -1
 
     const visualRows = wrapCells(cells, Math.max(contentWidth, 4))
     for (let vi = 0; vi < visualRows.length; vi++) {

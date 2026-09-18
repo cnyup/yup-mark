@@ -158,6 +158,15 @@
 - **README**：下载段更新（mac universal / win nsis / linux AppImage+deb；v0.3.0 起 Tauri）；特性路线补查找替换、列表层级、Tauri+TUI 四端。
 - **待办**：TR6（删 Electron）等用户 GUI 验收后执行。
 
+## 18. TUI 渲染与交互回归加强（2026-09-18）
+
+- **渲染策略统一**：默认编辑态下标题、引用、粗体、斜体、删除线、行内代码、链接、图片和数学标记保持隐藏；仅显式源码模式或 IME 组合输入临时显示原文。
+- **终端交互修复**：macOS Terminal 的 DEL（`0x7f`）在 Ink 打包补丁中改为 Backspace 语义；普通编辑与表格编辑均生效。普通文本改为仅使用 `useCursor` 原生插入符，移除反色假光标与双光标/残影；左右、上下与翻页按渲染后的可见列跨越隐藏标记。
+- **表格与代码块**：源码模式不再强制将活动表格渲染为网格；JavaScript parser 在 TUI 无头状态中同步注册，首帧代码 token 高亮不再依赖异步语言加载时机。
+- **验证扩充**：新增 `packages/tui/tests/syntax-integration.test.ts`，跨状态、布局和编辑事务验证表格、JavaScript 代码块、粗体、斜体、连续引用、隐藏标记导航及源码模式；`app-smoke.test.tsx` 扩为混合语法末端 Ink 冒烟。
+- **验证结果**：TUI 19 文件 / 170 用例通过；`typecheck` 与 TUI 发布构建通过。本机已以 `/tmp/yupmark-tui-syntax-verification.md` 完成混合语法手验启动。
+- **下一步**：ROADMAP MT5.1——引入真实 TTY（PTY/终端模拟）回归，覆盖方向键、Backspace、Tab、保存和原生光标；补齐表格空单元格跨格后的 `layout.cursor` 锚定边界。
+
 ## 17. 设置页上线（2026-09-18，用户验收期需求）
 
 - **入口**：侧栏底栏齿轮 / ⌘,（菜单项不变）→ 编辑区整体切换为设置页（保留侧栏与状态栏；替代原偏好弹窗，SettingsModal 删除）。

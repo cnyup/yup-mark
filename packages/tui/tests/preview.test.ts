@@ -19,7 +19,7 @@ function stateAtEnd(): ReturnType<typeof docState> {
   return docState(doc)
 }
 
-/** 光标在行首 offset：该块活跃 → 标记淡显而非隐藏 */
+/** 光标位置不会改变 Markdown 标记的可见性。 */
 function stateAt(pos: number): ReturnType<typeof docState> {
   return docState(doc, pos)
 }
@@ -57,14 +57,10 @@ describe('renderPreviewLines（无头装配）', () => {
     expect(plainLine(quote.spans)).toBe('│ 引用行')
   })
 
-  it('活跃块（光标所在）：标记淡显而非删除', () => {
-    const headingPos = 0
-    const lines = renderPreviewLines(stateAt(headingPos))
-    // 标题块活跃 → `# ` 以 cm-mark-dim 淡显出现在输出里
-    const text = plainLine(lines[0].spans)
-    expect(text).toContain('#')
-    const dimSpan = lines[0].spans.find((s) => s.text.includes('#'))
-    expect(dimSpan?.dim).toBe(true)
+  it('光标进入标题：# 仍隐藏，保持渲染态', () => {
+    const lines = renderPreviewLines(stateAt(0))
+    expect(plainLine(lines[0].spans)).toBe('标题一')
+    expect(lines[0].spans.some((s) => s.text.includes('#'))).toBe(false)
   })
 
   it('previewToPlainText 剥离样式（CI 输出路径）', () => {

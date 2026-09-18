@@ -28,6 +28,20 @@ const INK_NEEDLES = [
   ],
 ]
 
+function patchMacBackspace(js) {
+  const keyCodeNeedle = "127: 'delete',"
+  if (js.includes(keyCodeNeedle)) return js.replace(keyCodeNeedle, "127: 'backspace',")
+
+  const legacyStart = "else if (s === '\\x7f' || s === '\\x1b\\x7f') {"
+  const start = js.indexOf(legacyStart)
+  const end = start < 0 ? -1 : js.indexOf("key.name = 'delete';", start)
+  if (end >= 0) {
+    return `${js.slice(0, end)}key.name = 'backspace';${js.slice(end + "key.name = 'delete';".length)}`
+  }
+
+  throw new Error('patch-ink-fullscreen: macOS Backspace 锚点未找到（Ink 升级后需复核补丁）')
+}
+
 export const stubReactDevtools = {
   name: 'stub-react-devtools',
   setup(build) {
@@ -80,6 +94,10 @@ export const patchInkFullscreen = {
       }
       return { contents: out, loader: 'js' }
     })
+    build.onLoad({ filter: /[/\\]node_modules[/\\]ink[/\\]build[/\\]parse-keypress\.js$/ }, async (args) => ({
+      contents: patchMacBackspace(await readFile(args.path, 'utf8')),
+      loader: 'js',
+    }))
     build.onLoad({ filter: /[/\\]node_modules[/\\]ink[/\\]build[/\\]log-update\.js$/ }, async (args) => {
       const js = await readFile(args.path, 'utf8')
       if (!js.includes('export default logUpdate')) {

@@ -152,17 +152,21 @@ describe('live decorations 逐语法', () => {
     expect(hidden).not.toContain('1.')
   })
 
-  it('光标进入段落：该段落语法全部显示，其他块仍渲染', () => {
+  it('光标进入段落：Markdown 标记仍保持隐藏，其他块继续渲染', () => {
     const paraStart = doc.indexOf('**bold**')
     const { hidden } = buildAt(paraStart + 3)
-    expect(hidden).not.toContain('**')
+    expect(hidden).toContain('**')
+    expect(hidden).toContain('*')
+    expect(hidden).toContain('~~')
+    expect(hidden).toContain('`')
+    expect(hidden).toEqual(expect.arrayContaining(['[', '](https://example.com)']))
     expect(hidden).toContain('# ')
     expect(hidden).toContain('> ')
   })
 
-  it('光标进入标题：显示 #', () => {
+  it('光标进入标题：仍隐藏 #，保持渲染态', () => {
     const { hidden } = buildAt(1)
-    expect(hidden).not.toContain('# ')
+    expect(hidden).toContain('# ')
     expect(hidden).toContain('**')
   })
 
@@ -204,13 +208,14 @@ describe('列表项活动粒度', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Typora 式渲染态编辑：标记淡显（cm-mark-dim）
+// Typora 式渲染态编辑：行级标记不因普通光标移动展开
 // ---------------------------------------------------------------------------
-describe('标记淡显（活跃块渲染态编辑）', () => {
-  it('光标在标题内：# 淡显而非隐藏', () => {
-    const state = createEditorState('# 标题\n\n正文', 1)
-    const decos = buildLiveDecorations(state)
-    expect(markClasses(decos)).toContain('cm-mark-dim')
+describe('行级标记隐藏（渲染态编辑）', () => {
+  it('光标在标题内：# 仍隐藏，不淡显', () => {
+    const doc = '# 标题\n\n正文'
+    const decos = buildLiveDecorations(createEditorState(doc, 1))
+    expect(hiddenTexts(decos, doc)).toContain('# ')
+    expect(markClasses(decos)).not.toContain('cm-mark-dim')
   })
 
   it('光标离开标题：# 恢复隐藏、无淡显', () => {
@@ -219,16 +224,21 @@ describe('标记淡显（活跃块渲染态编辑）', () => {
     expect(markClasses(decos)).not.toContain('cm-mark-dim')
   })
 
-  it('行内标记就近揭示：光标在粗体内 ** 淡显，同块其他位置隐藏', () => {
-    const doc = '前缀 **bold** 后缀\n\nEND'
-    const inside = buildLiveDecorations(createEditorState(doc, doc.indexOf('bold') + 1))
-    expect(markClasses(inside)).toContain('cm-mark-dim')
-    expect(markClasses(inside)).toContain('cm-strong')
-
-    const outside = buildLiveDecorations(createEditorState(doc, doc.indexOf('后缀')))
-    // 同一块但选区不在粗体跨度内：样式保留、标记隐藏
-    expect(markClasses(outside)).toContain('cm-strong')
-    expect(markClasses(outside)).not.toContain('cm-mark-dim')
+  it('行内标记在光标进入后仍隐藏，样式保持生效', () => {
+    const doc = '前缀 **bold** *italic* ~~strike~~ `code` [link](https://a.b) 后缀'
+    const decos = buildLiveDecorations(createEditorState(doc, doc.indexOf('bold') + 1))
+    const hidden = hiddenTexts(decos, doc)
+    expect(hidden).toContain('**')
+    expect(hidden).toContain('*')
+    expect(hidden).toContain('~~')
+    expect(hidden).toContain('`')
+    expect(hidden).toEqual(expect.arrayContaining(['[', '](https://a.b)']))
+    expect(markClasses(decos)).toContain('cm-strong')
+    expect(markClasses(decos)).toContain('cm-em')
+    expect(markClasses(decos)).toContain('cm-strike')
+    expect(markClasses(decos)).toContain('cm-inline-code')
+    expect(markClasses(decos)).toContain('cm-link-text')
+    expect(markClasses(decos)).not.toContain('cm-mark-dim')
   })
 })
 

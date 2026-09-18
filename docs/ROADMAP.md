@@ -37,6 +37,7 @@ Electron → Tauri 2 原位替换；renderer/kernel/TUI 不动。已确认：Rad
 | MT4 | 主题调色板 + i18n + 会话 + 外部修改检测 | ✅ 2026-09-11 |
 | MT4.5 | mermaid flowchart + sequenceDiagram 字符画（D18 路线 B，其余类型仍占位框） | ✅ 2026-09-12（302 用例；备忘见 TUI.md §12f/§12f+） |
 | MT5 | npm 分发（yupmark-tui）+ CI 三平台矩阵 | ✅ 2026-09-13（独立安装 `npx yupmark` 验证通过；TUI 线收官，备忘见 TUI.md §12h） |
+| MT5.1 | 真实 TTY 交互回归 + 表格空单元格光标边界 | ⬜ 后续质量推进：PTY/终端模拟覆盖方向键、Backspace、Tab、保存与原生光标；补齐空单元格跨格后 `layout.cursor` 锚定 |
 
 ## 桌面线（顺延）
 

@@ -20,7 +20,7 @@ const SAMPLE = [
   '# YupMark TUI',
   '',
   '内核 @yupmark/live-cm 在**无头模式**驱动终端渲染，',
-  '样式 mark *常驻*，标记就近淡显——与桌面版同一套规则。',
+  '样式 mark 常驻，Markdown 标记保持隐藏——与桌面版同一套规则。',
   '',
   '## MT1：可编辑',
   '',

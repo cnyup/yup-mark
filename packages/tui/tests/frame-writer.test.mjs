@@ -95,7 +95,7 @@ describe('绝对定位帧绘制器', () => {
     log.setCursorPosition({ x: 2, y: 1 })
     log('hello\nworld') // 帧内容未变
     expect(s.written).toContain(`${ESC}2;3H`)
-    expect(s.written).not.toContain('hello') // 不重写
+    expect(s.written).not.toContain('hello')
   })
 
   it('光标无意图（隐藏行/被块吸收）：隐藏终端光标而非留在上次位置', () => {

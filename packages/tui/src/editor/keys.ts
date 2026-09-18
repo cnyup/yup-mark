@@ -9,9 +9,10 @@
  */
 import type { Key } from 'ink'
 import type { EditorSession } from './session'
-import { colToIndex, indexToCol, stepBack, stepForward } from './measure'
+import { charWidth, stepBack, stepForward } from './measure'
 import { tableAt } from './table-mode'
 import { handleTableKey, snapCursorIntoTable } from './table-keys'
+import { collectDecorations } from '../preview'
 
 export interface KeyContext {
   /** 编辑区高度（视觉行数），PgUp/PgDn 用 */
@@ -35,6 +36,64 @@ export function continueListPrefix(lineText: string): string | null {
   return `${indent}${nextMarker}${spacing}${task !== undefined ? '[ ] ' : ''}`
 }
 
+function isHiddenAt(hidden: { from: number; to: number }[], pos: number): boolean {
+  return hidden.some((h) => pos >= h.from && pos < h.to)
+}
+
+function hiddenRangeAt(
+  hidden: { from: number; to: number }[],
+  pos: number,
+  direction: -1 | 1,
+): { from: number; to: number } | null {
+  return direction < 0
+    ? hidden.find((h) => pos > h.from && pos <= h.to) ?? null
+    : hidden.find((h) => pos >= h.from && pos < h.to) ?? null
+}
+
+function skipHiddenPosition(session: EditorSession, pos: number, direction: -1 | 1): number {
+  const range = hiddenRangeAt(collectDecorations(session.state).hidden, pos, direction)
+  return range === null ? pos : direction < 0 ? range.from : range.to
+}
+
+function visibleColAt(session: EditorSession, lineText: string, lineFrom: number, index: number): number {
+  const idx = collectDecorations(session.state, { from: lineFrom, to: lineFrom + lineText.length })
+  let col = 0
+  for (let i = 0; i < index && i < lineText.length;) {
+    const cp = lineText.codePointAt(i) ?? lineText.charCodeAt(i)
+    const step = cp > 0xffff ? 2 : 1
+    if (!isHiddenAt(idx.hidden, lineFrom + i)) {
+      col += charWidth(lineText.slice(i, i + step))
+    }
+    i += step
+  }
+  return col
+}
+
+function visibleColToIndex(session: EditorSession, lineText: string, lineFrom: number, col: number): number {
+  const idx = collectDecorations(session.state, { from: lineFrom, to: lineFrom + lineText.length })
+  let acc = 0
+  let last = 0
+  for (let i = 0; i < lineText.length;) {
+    const cp = lineText.codePointAt(i) ?? lineText.charCodeAt(i)
+    const step = cp > 0xffff ? 2 : 1
+    const hidden = isHiddenAt(idx.hidden, lineFrom + i)
+    const w = hidden ? 0 : charWidth(lineText.slice(i, i + step))
+    if (acc + w > col) break
+    acc += w
+    i += step
+    last = i
+  }
+  return last
+}
+
+function isBackspaceInput(input: string, key: Key): boolean {
+  return key.backspace || input === '\x7f' || input === '\b'
+}
+
+function isDeleteInput(input: string, key: Key): boolean {
+  return key.delete || input === '\x1b[3~'
+}
+
 function moveTo(session: EditorSession, head: number, extend: boolean): void {
   const { doc } = session.state
   const pos = Math.max(0, Math.min(doc.length, head))
@@ -49,7 +108,7 @@ function moveVertical(session: EditorSession, dir: -1 | 1, ctx: KeyContext, exte
   const { doc, selection } = session.state
   const line = doc.lineAt(selection.main.head)
   const cursorIdx = selection.main.head - line.from
-  const goal = ctx.goalColumn ?? indexToCol(line.text, cursorIdx)
+  const goal = ctx.goalColumn ?? visibleColAt(session, line.text, line.from, cursorIdx)
   ctx.setGoalColumn(goal)
   const targetNo = line.number + dir
   if (targetNo < 1 || targetNo > doc.lines) {
@@ -58,7 +117,7 @@ function moveVertical(session: EditorSession, dir: -1 | 1, ctx: KeyContext, exte
     return
   }
   const target = doc.line(targetNo)
-  const idx = colToIndex(target.text, goal)
+  const idx = visibleColToIndex(session, target.text, target.from, goal)
   moveTo(session, target.from + idx, extend)
 }
 
@@ -164,11 +223,11 @@ export function handleKey(session: EditorSession, input: string, key: Key, ctx: 
     return 'none'
   }
 
-  if (key.backspace) {
+  if (isBackspaceInput(input, key)) {
     deleteSelectionOr(session, () => deleteCharBefore(session))
     return 'none'
   }
-  if (key.delete) {
+  if (isDeleteInput(input, key)) {
     deleteSelectionOr(session, () => deleteCharAfter(session))
     return 'none'
   }
@@ -180,13 +239,15 @@ export function handleKey(session: EditorSession, input: string, key: Key, ctx: 
   if (key.leftArrow) {
     ctx.setGoalColumn(null)
     const idx = main.head - line.from
-    moveTo(session, main.head === line.from && line.number > 1 ? line.from - 1 : line.from + stepBack(line.text, idx), key.shift)
+    const raw = main.head === line.from && line.number > 1 ? line.from - 1 : line.from + stepBack(line.text, idx)
+    moveTo(session, skipHiddenPosition(session, raw, -1), key.shift)
     return 'none'
   }
   if (key.rightArrow) {
     ctx.setGoalColumn(null)
     const idx = main.head - line.from
-    moveTo(session, main.head === line.to && line.number < doc.lines ? line.to + 1 : line.from + stepForward(line.text, idx), key.shift)
+    const raw = main.head === line.to && line.number < doc.lines ? line.to + 1 : line.from + stepForward(line.text, idx)
+    moveTo(session, skipHiddenPosition(session, raw, 1), key.shift)
     return 'none'
   }
   if (key.upArrow) {
@@ -209,9 +270,9 @@ export function handleKey(session: EditorSession, input: string, key: Key, ctx: 
     const step = ctx.height - 2
     const targetNo = Math.max(1, Math.min(doc.lines, line.number + (key.pageDown ? step : -step)))
     const target = doc.line(targetNo)
-    const goal = ctx.goalColumn ?? indexToCol(line.text, main.head - line.from)
+    const goal = ctx.goalColumn ?? visibleColAt(session, line.text, line.from, main.head - line.from)
     ctx.setGoalColumn(goal)
-    moveTo(session, target.from + colToIndex(target.text, goal), key.shift)
+    moveTo(session, target.from + visibleColToIndex(session, target.text, target.from, goal), key.shift)
     return 'none'
   }
   if (key.escape) {

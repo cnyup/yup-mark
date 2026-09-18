@@ -11,6 +11,7 @@
 import { EditorState } from '@codemirror/state'
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { languages } from '@codemirror/language-data'
+import { javascriptLanguage } from '@codemirror/lang-javascript'
 import { mathSyntax } from '@yupmark/live-cm/mathSyntax'
 import { sourceModeField, focusModeField, typewriterModeField } from '@yupmark/live-cm/viewModes'
 
@@ -23,7 +24,11 @@ export function docState(doc: string, anchor?: number): EditorState {
     extensions: [
       markdown({
         base: markdownLanguage,
-        codeLanguages: languages,
+        codeLanguages: (info) => {
+          const name = info.trim().toLowerCase()
+          if (name === 'js' || name === 'javascript') return javascriptLanguage
+          return languages.find((language) => language.alias.includes(name) || language.name.toLowerCase() === name) ?? null
+        },
         extensions: mathSyntax,
         addKeymap: false, // 键位由 TUI 的 keys.ts 翻译（MT1），不要 CM 的 DOM 键表
       }),

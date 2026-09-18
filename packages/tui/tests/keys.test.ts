@@ -102,6 +102,13 @@ describe('输入与删除', () => {
     expect(head(s)).toBe(2)
   })
 
+  it('Backspace 兼容终端 DEL 字符', () => {
+    const s = makeSession('ab', 2)
+    handleKey(s, '\x7f', makeKey(), makeCtx())
+    expect(text(s)).toBe('a')
+    expect(head(s)).toBe(1)
+  })
+
   it('Backspace 行首 = 并入上一行', () => {
     const s = makeSession('one\ntwo', 4)
     handleKey(s, '', makeKey({ backspace: true }), makeCtx())
@@ -152,12 +159,29 @@ describe('光标移动', () => {
     expect(head(s)).toBe(3)
   })
 
+  it('左右移动跨过隐藏的行内 Markdown 标记', () => {
+    const s = makeSession('**ab**', 0)
+    handleKey(s, '', makeKey({ rightArrow: true }), makeCtx())
+    expect(head(s)).toBe(2) // 跳过开头 **，落在 a 前
+    handleKey(s, '', makeKey({ rightArrow: true }), makeCtx())
+    expect(head(s)).toBe(3)
+    handleKey(s, '', makeKey({ rightArrow: true }), makeCtx())
+    expect(head(s)).toBe(6) // 跳过结尾 **
+  })
+
   it('上下移动保持目标视觉列（CJK）', () => {
     // 第一行 '中文x'（列宽 0..5，x 后 = 列 5），第二行 '中xxxx'
     const s = makeSession('中文x\n中xxxx', 3) // 光标在 x 后
     handleKey(s, '', makeKey({ downArrow: true }), makeCtx())
     // 下列 col5 → '中xxx' 后（index 4）
     expect(head(s)).toBe('中文x\n'.length + 4)
+  })
+
+  it('上下移动按渲染后的可见列对齐隐藏标题标记', () => {
+    const doc = '正文\n## 标题'
+    const s = makeSession(doc, 1) // 正文第 2 个可见列
+    handleKey(s, '', makeKey({ downArrow: true }), makeCtx())
+    expect(head(s)).toBe(doc.indexOf('标题') + 1)
   })
 
   it('Home/End 行首行尾', () => {
