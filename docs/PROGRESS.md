@@ -125,3 +125,13 @@
 - **发布**：保持手动——`cd packages/tui && npm publish`（需 npm 账号；CI 只做验证不自动发）。
 - **GitHub Release 通道（2026-09-13 追加，用户选定主通道）**：`.github/workflows/tui-release.yml`——推 `tui-vX.Y.Z` 标签（与桌面 `v*` 不冲突）自动跑测试/构建/冒烟后用 softprops 创建 Release 并附 npm tarball，Release 说明含免账号安装命令；README 安装说明双通道（GitHub Release 为主，npm 源后补）。发布动作 = `git push origin main --follow-tags`（需 GitHub 连通，当前网络需代理）。
 - **TUI 线 MT0-MT5 全部完成**。后续待决：桌面线 P0/P1（⌘F 查找替换、列表 Tab 嵌套等）；v2 清单（图形协议真图、vim 层、单文件二进制、resetBaseline 小修）。
+
+## 13. 桌面线 Tauri 重构启动（2026-09-18，TR0–TR3 编译级完成）
+
+- **决策（用户逐项确认）**：Electron → Tauri 2.10 原位替换（renderer 保留、验收后删 Electron）；UI 组件库选 Radix 无头组件（视觉/7 套主题零改动）；构建在远程 yup-dev（仓库经 mutagen 接入 `~/github/yup-mark ⇄ /root/code/yup-mark`，远程装 Rust 1.98 + webkit2gtk-4.1；GUI 由用户本地 Mac `tauri dev` 手验）；自动更新/签名本次不做。整体方针不变：仿 Typora。
+- **TR0 脚手架**：renderer 脱离 electron-vite → 纯 vite（root src/renderer、产物 dist/、别名不变；vitest.config 显式钉 root 防合并泄漏）；`src-tauri/`（窗口 1000×700/min 640×400、CSP+asset 协议 scope `**`、icons 由 build/icon.png 生成）；**`window.yupmark` Tauri 适配层** `src/renderer/lib/tauriApi.ts`（RUST_CMD 通道名映射表、Result 协议与 'canceled' 语义保持、`resolveAssetUrl` 供 engine-img 钩子）；main.tsx bootstrap 安装。
+- **TR1 命令面**：20 个 invoke 命令全量 Rust 化（commands/mod.rs，dialog/opener/clipboard-manager 插件 Rust 侧调用 + notify crate）；state.json serde 同构（recent/recentDirs/session 三键 camelCase，session 走 Value 透传）；watcher 引用计数（key `r:`/`s:`，事件换算为「被监听目录 + 相对路径」对齐 handleFsEvent 拼接语义）；文件树 fsops.rs（自然排序/忽略集/20000 上限/预览 120 字符，Rust 单测 5 个）。
+- **TR2 原生菜单**：menu.rs 双语 LABELS；加速键全对齐（⌘⇧L 侧栏、⌘`/Ctrl+Tab 切文档、⌘/ 源码、F8/F9、缩放 Ctrl+Shift±= 让出 ⌘=⌘-⌘0）；Open Recent 子菜单随 push_recent 重建；`set_language` 重建；缩放/全屏/reload/devtools/About 宿主侧直处理（menu:action 契约零改动，App.tsx 分发未动）；mac appMenu 走 `#[cfg(target_os)]`。
+- **TR3 编辑链路**：外链 window.open 补丁 → Rust `open_external`（http/https 白名单）；关窗冲刷改 `onCloseRequested`（preventDefault → 冲刷 → destroy，WKWebView beforeunload 不可靠）；watcher/冲突弹窗/自动保存/会话逻辑本体未动（纯事件源替换）。
+- **验证（编译级）**：cargo check/clippy 0 警告/fmt/test 7 用例 ✓；typecheck×3 + lint + vitest 39 文件/306 用例 ✓；vite build ✓。**GUI 手验清单待用户本地执行**（见 ROADMAP TR 章节）。
+- **环境备忘**：远程磁盘曾满（清 go-build 缓存 8.4G 腾挪）；远程 Node 走 nvm v24.14（直接 `node` 可能命中系统 v18，命令统一 `source /root/.nvm/nvm.sh`）。

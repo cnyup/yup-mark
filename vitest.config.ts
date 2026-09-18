@@ -2,6 +2,8 @@ import { defineConfig } from 'vitest/config'
 import { resolve } from 'node:path'
 
 export default defineConfig({
+  // vite.config.ts 的 root 是 src/renderer，这里必须显式钉回项目根，否则测试发现会被合并配置带偏
+  root: resolve(__dirname),
   test: {
     environment: 'node',
     setupFiles: ['tests/setup.ts'],

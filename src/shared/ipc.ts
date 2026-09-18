@@ -135,4 +135,7 @@ export interface YupmarkApi {
   onMenuAction(handler: (event: MenuEvent) => void): () => void
   /** 订阅文件系统变更事件，返回取消订阅函数 */
   onFsEvent(handler: (event: FsEventData) => void): () => void
+
+  /** 桌面宿主可选：绝对路径 → 可加载的本地资源 URL（Tauri asset 协议；Electron 不实现，走 yup-file 默认分支） */
+  resolveAssetUrl?(absPath: string): string
 }

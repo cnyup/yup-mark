@@ -4,7 +4,25 @@
 > **每项动工前先与用户确认方案**（协作铁律见 [CONVENTIONS.md §0](./CONVENTIONS.md)）。
 > 进度快照见 [PROGRESS.md](./PROGRESS.md)。
 
-## TUI 线（当前活跃）
+## 桌面线 Tauri 重构（2026-09-18 起，当前活跃）
+
+Electron → Tauri 2 原位替换；renderer/kernel/TUI 不动。已确认：Radix 无头组件、远程 yup-dev 构建 + 本地 GUI 手验、不做自动更新/签名。
+
+| 阶段 | 内容 | 状态 |
+|---|---|---|
+| TR-pre | mutagen 接入 + 远程 Rust/webkit2gtk/Node24 | ✅ 2026-09-18 |
+| TR0 | vite 化 + src-tauri 脚手架 + window.yupmark 适配层 + asset 协议图片 | ✅ 编译级 2026-09-18（GUI 手验待用户） |
+| TR1 | Rust 命令面 20 命令 + notify watcher + state.json 同构 | ✅ 编译级 2026-09-18 |
+| TR2 | 原生菜单 + 加速键 + i18n 重建 + About/缩放/全屏 | ✅ 编译级 2026-09-18 |
+| TR3 | 外链 open_external + onCloseRequested 冲刷 + 事件源替换 | ✅ 编译级 2026-09-18 |
+| KP0 | ⌘F/⌥⌘F 查找替换 + 列表 Tab 升降层级（内核补课，原桌面 P0） | ⬜ |
+| TR4 | Radix 无头组件接入 + 7 主题三平台回归 | ⬜ |
+| TR5 | 三平台打包 + desktop CI/Release workflow（四端分发收官） | ⬜ |
+| TR6 | 删 Electron 全套 + 文档更新 | ⬜ |
+
+**用户 GUI 手验清单（本地 Mac：`rustup` 一次 → `npm run tauri dev`）**：窗口尺寸/中文输入/打开-保存-另存/文件树增删改名/最近目录/菜单双语切换/加速键全表/⌘点击外链/外部修改→静默重载与冲突弹窗/关窗冲刷/主题 7 套/会话恢复。
+
+## TUI 线（已收官）
 
 完整设计见 [TUI.md](./TUI.md)（ADR D13–D18 已敲定，含架构/装饰映射表/键位表/里程碑/风险）。
 

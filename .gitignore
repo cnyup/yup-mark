@@ -12,7 +12,14 @@ coverage/
 release/
 *.tsbuildinfo
 
+# Tauri（Rust 构建产物与生成物）
+src-tauri/target/
+src-tauri/gen/
+
 # 布局测试 harness 的打包产物
 scripts/layout-harness/bundle.js
 scripts/layout-harness/bundle.css
 *.tgz
+
+# 本地 AI 会话产物
+.zcode/

@@ -29,7 +29,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p tsconfig.tui.json",
     "lint": "eslint .",
     "test": "vitest run",
-    "tui": "node packages/tui/scripts/run-cli.mjs"
+    "tui": "node packages/tui/scripts/run-cli.mjs",
+    "dev:web": "vite",
+    "build:web": "vite build",
+    "tauri": "tauri"
   },
   "build": {
     "appId": "com.yupmark.app",
@@ -77,6 +80,7 @@
     "@codemirror/state": "^6.7.4",
     "@codemirror/view": "^6.43.11",
     "@lezer/highlight": "^1.2.3",
+    "@tauri-apps/api": "^2.9.0",
     "i18next": "^26.4.2",
     "katex": "^0.18.7",
     "mermaid": "^11.17.2",
@@ -87,6 +91,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@tauri-apps/cli": "^2.9.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^26.5.0",

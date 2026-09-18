@@ -11,6 +11,8 @@ import { SettingsModal } from './SettingsModal'
 import { useWorkspaceStore } from './store/workspaceStore'
 import { IS_MAC } from '@yupmark/live-cm/platform'
 import { toggleFocusMode, toggleSourceMode, toggleTypewriterMode } from '@yupmark/live-cm/viewModes'
+import { isTauri } from '../lib/tauriApi'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 
 /** 会话恢复只跑一次（StrictMode 双挂载/热重载防护） */
 let sessionRestored = false
@@ -118,15 +120,30 @@ export function App() {
   }, [])
 
   // 关窗/刷新前：冲刷挂起的自动保存与会话
+  // Tauri 下 WKWebView 的 beforeunload 不可靠，改走 onCloseRequested：拦下→冲刷→真正关闭
   useEffect(() => {
-    const flush = () => {
+    const flushSync = () => {
       const s = useWorkspaceStore.getState()
       s.persistSessionNow()
       const activeTab = s.tabs.find((x) => x.id === s.activeId)
       if (activeTab?.path && activeTab.dirty) void s.saveActiveNow()
     }
-    window.addEventListener('beforeunload', flush)
-    return () => window.removeEventListener('beforeunload', flush)
+    if (isTauri()) {
+      const win = getCurrentWindow()
+      const unlisten = win.onCloseRequested(async (event) => {
+        event.preventDefault()
+        const s = useWorkspaceStore.getState()
+        s.persistSessionNow()
+        const activeTab = s.tabs.find((x) => x.id === s.activeId)
+        if (activeTab?.path && activeTab.dirty) await s.saveActiveNow()
+        await win.destroy()
+      })
+      return () => {
+        void unlisten.then((off) => off())
+      }
+    }
+    window.addEventListener('beforeunload', flushSync)
+    return () => window.removeEventListener('beforeunload', flushSync)
   }, [])
 
   // 窗口标题跟随激活文档
