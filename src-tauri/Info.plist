@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- 应用首选中文：WKWebView 系统右键项（Look Up/Translate/编辑菜单等）据此选语言，
+       否则跟随包默认英文，出现界面中文/系统菜单英文混用 -->
+  <key>CFBundleDevelopmentRegion</key>
+  <string>zh_CN</string>
+  <key>CFBundleLocalizations</key>
+  <array>
+    <string>zh_CN</string>
+    <string>en</string>
+  </array>
+</dict>
+</plist>

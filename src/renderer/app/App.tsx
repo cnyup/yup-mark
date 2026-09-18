@@ -148,6 +148,20 @@ export function App() {
     return () => window.removeEventListener('beforeunload', flushSync)
   }, [])
 
+  // 非编辑器区域的右键：拦截 WKWebView 原生菜单（Look Up/Translate/Inspect Element 等英文系统项）。
+  // 自绘菜单（编辑器/文件树 Radix）已 preventDefault → defaultPrevented 为 true 时放行；
+  // 输入框保留原生编辑菜单（剪切/粘贴）。devtools 仍走「视图」菜单。
+  useEffect(() => {
+    const onCtxMenu = (e: MouseEvent): void => {
+      if (e.defaultPrevented) return
+      const target = e.target as HTMLElement | null
+      if (target?.closest('input, textarea, [contenteditable="true"]')) return
+      e.preventDefault()
+    }
+    window.addEventListener('contextmenu', onCtxMenu)
+    return () => window.removeEventListener('contextmenu', onCtxMenu)
+  }, [])
+
   // 窗口标题跟随激活文档
   useEffect(() => {
     const name = tab?.path ? basename(tab.path) : t('file.untitled')
