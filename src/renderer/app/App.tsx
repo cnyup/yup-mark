@@ -134,11 +134,24 @@ export function App() {
       const win = getCurrentWindow()
       const unlisten = win.onCloseRequested(async (event) => {
         event.preventDefault()
-        const s = useWorkspaceStore.getState()
-        s.persistSessionNow()
-        const activeTab = s.tabs.find((x) => x.id === s.activeId)
-        if (activeTab?.path && activeTab.dirty) await s.saveActiveNow()
-        await win.destroy()
+        try {
+          const s = useWorkspaceStore.getState()
+          s.persistSessionNow()
+          const activeTab = s.tabs.find((x) => x.id === s.activeId)
+          if (activeTab?.path && activeTab.dirty) await s.saveActiveNow()
+        } catch {
+          // 冲刷失败不阻塞关窗
+        }
+        try {
+          await win.destroy()
+        } catch {
+          // 权限/时序异常的最后兜底：直接再试 close
+          try {
+            await win.close()
+          } catch {
+            /* 无法更差了 */
+          }
+        }
       })
       return () => {
         void unlisten.then((off) => off())

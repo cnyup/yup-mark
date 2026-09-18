@@ -3,5 +3,11 @@
   "identifier": "default",
   "description": "YupMark 主窗口默认能力；命令权限随里程碑补齐",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-destroy",
+    "core:window:allow-close",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-is-fullscreen"
+  ]
 }
