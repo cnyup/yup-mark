@@ -12,6 +12,7 @@ import { EditorView } from '@codemirror/view'
 import { setDocDir } from '@yupmark/live-cm/engine'
 import { extractOutline, type OutlineItem } from '@yupmark/live-cm/outline'
 import { findGapAnchor } from '@yupmark/live-cm/blocks'
+import { useAppSettings } from './appSettings'
 
 const AUTOSAVE_DELAY_MS = 800
 const SESSION_SAVE_DELAY_MS = 1000
@@ -120,9 +121,15 @@ const hostEvents = (): Extension =>
     if (update.selectionSet) store.onSelectionChanged(update.state.selection.main.head)
   })
 
-/** 从内容新建文档状态：光标置于空闲锚点（块间空隙），打开即全渲染（Typora 行为） */
+/** 从内容新建文档状态：光标置于空闲锚点（块间空隙），打开即全渲染（Typora 行为）。
+ *  键位 Compartment 注入当前覆盖（baseExtensions 的默认值被后位覆盖取代），tab 快照因此带着自定义键位 */
 function docState(content: string): EditorState {
-  return createEditorState(content, findGapAnchor(createEditorState(content)), [hostEvents()])
+  return createEditorState(
+    content,
+    findGapAnchor(createEditorState(content)),
+    [hostEvents()],
+    useAppSettings.getState().keybindings,
+  )
 }
 
 let autosaveTimer: ReturnType<typeof setTimeout> | null = null

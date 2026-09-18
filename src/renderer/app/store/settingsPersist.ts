@@ -23,11 +23,25 @@ export const THEME_OPTIONS: ThemeMode[] = [
 ]
 export const LOCALE_OPTIONS: LocaleMode[] = ['auto', 'zh-CN', 'en-US']
 
+/** 编辑器字体：null = 跟随主题 */
+export interface EditorFont {
+  /** CSS font-family 值；null 跟随主题（--content-font） */
+  family: string | null
+  /** 正文字号 px；null 跟随默认 17px */
+  size: number | null
+}
+
+export const EDITOR_FONT_MIN = 12
+export const EDITOR_FONT_MAX = 24
+
 const STORAGE_KEY = 'yupmark-settings'
 
 export interface PersistedSettings {
   themeMode: ThemeMode
   localeMode: LocaleMode
+  /** 显式覆盖的快捷键（id → CM6 键位串）；未知 id 读取时被忽略 */
+  keybindings?: Record<string, string>
+  editorFont?: EditorFont
 }
 
 export function readPersisted(): PersistedSettings {
@@ -35,6 +49,7 @@ export function readPersisted(): PersistedSettings {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<PersistedSettings>
+      const font = parsed.editorFont
       return {
         themeMode: THEME_OPTIONS.includes(parsed.themeMode as ThemeMode)
           ? (parsed.themeMode as ThemeMode)
@@ -42,12 +57,25 @@ export function readPersisted(): PersistedSettings {
         localeMode: LOCALE_OPTIONS.includes(parsed.localeMode as LocaleMode)
           ? (parsed.localeMode as LocaleMode)
           : 'auto',
+        keybindings:
+          parsed.keybindings && typeof parsed.keybindings === 'object'
+            ? Object.fromEntries(
+                Object.entries(parsed.keybindings).filter(([, v]) => typeof v === 'string'),
+              )
+            : {},
+        editorFont: {
+          family: typeof font?.family === 'string' ? font.family : null,
+          size:
+            typeof font?.size === 'number'
+              ? Math.min(EDITOR_FONT_MAX, Math.max(EDITOR_FONT_MIN, Math.round(font.size)))
+              : null,
+        },
       }
     }
   } catch {
     // 忽略损坏的存储
   }
-  return { themeMode: 'auto', localeMode: 'auto' }
+  return { themeMode: 'auto', localeMode: 'auto', keybindings: {}, editorFont: { family: null, size: null } }
 }
 
 export function persistSettings(settings: PersistedSettings): void {

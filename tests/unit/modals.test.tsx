@@ -3,7 +3,8 @@ import { describe, expect, it, vi, afterEach } from 'vitest'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import i18n from '@renderer/i18n'
 import { PromptModal } from '@renderer/app/PromptModal'
-import { SettingsModal } from '@renderer/app/SettingsModal'
+import { SettingsPage } from '@renderer/app/SettingsPage'
+import { useAppSettings } from '@renderer/app/store/appSettings'
 import { FileTree } from '@renderer/app/FileTree'
 import { useWorkspaceStore } from '@renderer/app/store/workspaceStore'
 import '@renderer/i18n'
@@ -37,13 +38,18 @@ describe('Radix 无头组件（Modal/ContextMenu）', () => {
     expect(onCancel).toHaveBeenCalled()
   })
 
-  it('SettingsModal：Esc 关闭回调 + 两个下拉存在', () => {
-    const onClose = vi.fn()
-    const { baseElement } = render(<SettingsModal onClose={onClose} />)
-    const modal = baseElement.querySelector('.modal') as HTMLElement
-    expect(modal.querySelectorAll('select.settings__select').length).toBe(2)
-    fireEvent.keyDown(baseElement, { key: 'Escape' })
-    expect(onClose).toHaveBeenCalled()
+  it('SettingsPage：三区块渲染 + 主题/语言下拉 + Esc 关回编辑器', () => {
+    useAppSettings.getState().openSettingsPage()
+    const { baseElement } = render(<SettingsPage />)
+    const page = baseElement.querySelector('.settings-page') as HTMLElement
+    expect(page).not.toBeNull()
+    expect(page.querySelectorAll('select.settings__select').length).toBe(3) // 主题/字体/语言
+    // 快捷键区：命令行数 ≥ 编辑器注册表 + 应用面板两条
+    const rows = page.querySelectorAll('.settings-key')
+    expect(rows.length).toBeGreaterThanOrEqual(30)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(useAppSettings.getState().settingsPageOpen).toBe(false)
+    useAppSettings.setState({ keybindings: {} })
   })
 
   it('FileTree：右键文件行 → ContextMenu 弹出且项集正确（文件无「新建」组）', async () => {

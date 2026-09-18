@@ -85,45 +85,6 @@ body {
 }
 
 
-/* ===== 悬浮提示（data-tip）===== */
-[data-tip] {
-  position: relative;
-}
-
-[data-tip]::after {
-  content: attr(data-tip);
-  position: absolute;
-  left: calc(100% + 8px);
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 3px 8px;
-  border-radius: 5px;
-  background: var(--text-color);
-  color: var(--bg-color);
-  font-size: 11px;
-  font-weight: 500;
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.12s ease 0.35s;
-  pointer-events: none;
-  z-index: 90;
-}
-
-[data-tip]:hover::after {
-  opacity: 1;
-}
-
-[data-tip-pos='left']::after {
-  left: auto;
-  right: calc(100% + 8px);
-}
-
-[data-tip-pos='bottom']::after {
-  left: 50%;
-  right: auto;
-  top: calc(100% + 8px);
-  transform: translateX(-50%);
-}
 
 /* ===== 侧边栏 ===== */
 .sidebar {
@@ -405,12 +366,6 @@ body {
   position: absolute;
   right: 1px;
   bottom: 1px;
-}
-
-.sidebar-popover__sort[data-tip]::after {
-  left: 50%;
-  top: calc(100% + 6px);
-  transform: translateX(-50%);
 }
 
 .sidebar__body {
@@ -723,7 +678,7 @@ body {
 }
 
 .ctx-menu {
-  position: fixed;
+  /* 定位由 Radix ContextMenu 内联样式接管 */
   z-index: 101;
   min-width: 148px;
   padding: 3px;
@@ -874,13 +829,15 @@ body {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.32);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: 200;
 }
 
+/* Radix Dialog 的 Overlay/Content 为兄弟节点：.modal 自行居中 */
 .modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 380px;
   max-width: calc(100vw - 48px);
   background: var(--bg-color);
@@ -969,7 +926,7 @@ body {
 .editor-host .cm-editor {
   background: transparent;
   color: var(--text-color);
-  font-size: 17px;
+  font-size: var(--editor-font-size, 17px);
   line-height: 1.75;
 }
 
@@ -1765,4 +1722,225 @@ body {
 .cm-editor .cm-searchMatch-selected {
   background: var(--primary-color);
   color: var(--bg-color);
+}
+
+/* ===== Radix Tooltip（替代 data-tip 纯 CSS 提示）===== */
+.tip {
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: var(--text-color);
+  color: var(--bg-color);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  z-index: 300;
+  user-select: none;
+}
+
+/* ==========================================================================
+   设置页（侧栏齿轮 / ⌘, 进入；替代原偏好设置弹窗）
+   ========================================================================== */
+.settings-page-host {
+  overflow: hidden;
+  display: flex;
+}
+
+.settings-page {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.settings-page__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 28px 12px;
+  color: var(--heading-muted-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.settings-page__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.settings-page__back {
+  margin-left: auto;
+  padding: 3px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-color);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.settings-page__back:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.settings-page__body {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 28px 40px;
+  max-width: 720px;
+}
+
+.settings-section {
+  margin-top: 22px;
+}
+
+.settings-section__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--heading-muted-color);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.settings-section__title .settings-link-btn {
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.settings-section__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+  font-size: 13px;
+  color: var(--text-color);
+}
+
+.settings-section__row > span:first-child {
+  width: 96px;
+  flex-shrink: 0;
+  color: var(--quote-text-color);
+}
+
+.settings-section__note {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--meta-content-color);
+}
+
+.settings-font-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-font-size input[type='range'] {
+  width: 180px;
+  accent-color: var(--primary-color);
+}
+
+.settings-font-size__value {
+  min-width: 38px;
+  font-size: 12px;
+  color: var(--quote-text-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.settings-font-preview {
+  margin: 10px 0 0 108px;
+  padding: 10px 14px;
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  font-family: var(--content-font);
+  font-size: var(--editor-font-size, 17px);
+  line-height: 1.7;
+  color: var(--text-color);
+}
+
+.settings-keys-group {
+  margin: 6px 0 14px;
+}
+
+.settings-keys-group__name {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--meta-content-color);
+  margin: 8px 0 2px;
+}
+
+.settings-key {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12.5px;
+}
+
+.settings-key:hover {
+  background: var(--quote-bg-color);
+}
+
+.settings-key--capturing {
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+}
+
+.settings-key__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-key__right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.settings-key__hint {
+  font-size: 11px;
+  color: var(--error-color);
+}
+
+.settings-key__kbd {
+  min-width: 72px;
+  text-align: center;
+  padding: 2px 8px;
+  border: 1px solid var(--border-color);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--code-bg-color);
+  font-family: var(--monospace);
+  font-size: 11px;
+  color: var(--text-color);
+  white-space: nowrap;
+}
+
+.settings-key--capturing .settings-key__kbd {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.settings-link-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 11.5px;
+  color: var(--link-color);
+  cursor: pointer;
+}
+
+.settings-link-btn:hover {
+  text-decoration: underline;
 }

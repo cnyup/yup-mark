@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { MenuEvent } from '@shared/ipc'
 import { basename } from '@yupmark/live-cm/paths'
@@ -7,8 +7,10 @@ import { Sidebar } from './Sidebar'
 import { TabBar } from './TabBar'
 import { StatusBar } from './StatusBar'
 import { ConflictModal } from './ConflictModal'
-import { SettingsModal } from './SettingsModal'
 import { useWorkspaceStore } from './store/workspaceStore'
+import { APP_COMMANDS, useAppSettings } from './store/appSettings'
+import { matchesBinding } from '@yupmark/live-cm/keybindings'
+import { SettingsPage } from './SettingsPage'
 import { IS_MAC } from '@yupmark/live-cm/platform'
 import { toggleFocusMode, toggleSourceMode, toggleTypewriterMode } from '@yupmark/live-cm/viewModes'
 import { isTauri } from '../lib/tauriApi'
@@ -39,7 +41,7 @@ export function App() {
   const sidebarOpen = useWorkspaceStore((s) => s.sidebarOpen)
   const tab = tabs.find((x) => x.id === activeId)
   const mounted = useRef(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const settingsPageOpen = useAppSettings((s) => s.settingsPageOpen)
 
   // 原生菜单 + 文件系统事件 + 会话恢复
   useEffect(() => {
@@ -85,7 +87,7 @@ export function App() {
             withHostView(toggleTypewriterMode)
             break
           case 'app:settings':
-            setSettingsOpen(true)
+            useAppSettings.getState().openSettingsPage()
             break
         }
       } else if (action.action === 'file:open-path') {
@@ -155,15 +157,16 @@ export function App() {
   // Typora 视图键：面板切换（Win Ctrl+Shift+1/3，mac ⌃⌘1/⌃⌘3），侧栏收起时自动展开
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      const panel = e.code === 'Digit1' ? 'outline' : e.code === 'Digit3' ? 'files' : null
-      if (!panel || e.altKey) return
-      const macCombo = IS_MAC && e.metaKey && e.ctrlKey && !e.shiftKey
-      const winCombo = !IS_MAC && e.ctrlKey && e.shiftKey && !e.metaKey
-      if (!macCombo && !winCombo) return
-      e.preventDefault()
-      const s = useWorkspaceStore.getState()
-      if (!s.sidebarOpen) s.toggleSidebar()
-      s.setPanel(panel)
+      const overrides = useAppSettings.getState().keybindings
+      for (const cmd of APP_COMMANDS) {
+        const key = overrides[cmd.id] ?? (IS_MAC ? cmd.mac : cmd.win)
+        if (!matchesBinding(e, key)) continue
+        e.preventDefault()
+        const s = useWorkspaceStore.getState()
+        if (!s.sidebarOpen) s.toggleSidebar()
+        s.setPanel(cmd.id.endsWith('outline') ? 'outline' : 'files')
+        return
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -173,14 +176,21 @@ export function App() {
     <div className="app">
       {sidebarOpen ? <Sidebar /> : null}
       <div className="app__main">
-        <TabBar />
-                <main className="app__editor">
-          <EditorHost />
-        </main>
+        {settingsPageOpen ? (
+          <main className="app__editor settings-page-host">
+            <SettingsPage />
+          </main>
+        ) : (
+          <>
+            <TabBar />
+            <main className="app__editor">
+              <EditorHost />
+            </main>
+          </>
+        )}
         <StatusBar />
       </div>
       <ConflictModal />
-      {settingsOpen ? <SettingsModal onClose={() => setSettingsOpen(false)} /> : null}
     </div>
   )
 }

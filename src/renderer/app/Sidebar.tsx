@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { basename, dirname } from '@yupmark/live-cm/paths'
 import type { FileSortMode } from '@shared/ipc'
 import { useWorkspaceStore } from './store/workspaceStore'
+import { useAppSettings } from './store/appSettings'
 import { FileTree } from './FileTree'
 import { OutlinePanel } from './OutlinePanel'
 import { PromptModal } from './PromptModal'
@@ -19,6 +20,7 @@ import {
   IconPanel,
   IconPlus,
   IconSearch,
+  IconSettings,
   IconTree,
   IconX,
   IconZA,
@@ -298,6 +300,17 @@ export function Sidebar() {
               onClick={() => useWorkspaceStore.getState().setFileView(view === 'tree' ? 'list' : 'tree')}
             >
               {view === 'tree' ? <IconList /> : <IconTree />}
+            </button>
+          </Tip>
+
+          <Tip text={t('settings.title')}>
+            <button
+              type="button"
+              className="sidebar__icon-btn"
+              aria-label={t('settings.title')}
+              onClick={() => useAppSettings.getState().openSettingsPage()}
+            >
+              <IconSettings />
             </button>
           </Tip>
 

@@ -20,6 +20,8 @@ Electron → Tauri 2 原位替换；renderer/kernel/TUI 不动。已确认：Rad
 | TR5 | 三平台打包 + desktop CI/Release workflow（四端分发收官） | ✅ 2026-09-18（deb 4.7MB 实测；AppImage/dmg/nsis 待 CI） |
 | TR6 | 删 Electron 全套 + 文档更新 | ⬜ |
 
+**设置页（2026-09-18 新增）**：侧栏齿轮/⌘, 进入；主题/语言/字体（族+字号）/快捷键（查看+重绑+冲突让位）。菜单加速键暂不可自定义。
+
 **用户 GUI 手验清单（本地 Mac：`rustup` 一次 → `npm run tauri dev`）**：窗口尺寸/中文输入/打开-保存-另存/文件树增删改名/最近目录/菜单双语切换/加速键全表/⌘点击外链/外部修改→静默重载与冲突弹窗/关窗冲刷/主题 7 套/会话恢复。
 
 ## TUI 线（已收官）

@@ -157,3 +157,11 @@
 - **版本**：package.json 对齐 0.3.0（= tauri.conf.json）；tag 方案不变 `v*`（桌面）/`tui-v*`（TUI）。
 - **README**：下载段更新（mac universal / win nsis / linux AppImage+deb；v0.3.0 起 Tauri）；特性路线补查找替换、列表层级、Tauri+TUI 四端。
 - **待办**：TR6（删 Electron）等用户 GUI 验收后执行。
+
+## 17. 设置页上线（2026-09-18，用户验收期需求）
+
+- **入口**：侧栏底栏齿轮 / ⌘,（菜单项不变）→ 编辑区整体切换为设置页（保留侧栏与状态栏；替代原偏好弹窗，SettingsModal 删除）。
+- **外观**：主题（8 选项）+ 语言即时生效（沿用原 store 链路）。
+- **字体**：正文族预设（跟随主题/无衬线/衬线/楷体/等宽）+ 字号 12–24px 滑杆 + 预览行；行内覆盖 `--content-font`/`--editor-font-size`（用户显式选择优先于主题字体）。
+- **快捷键**：内核 `keybindings.ts` 命令注册表（33 条编辑器命令 + 2 条应用面板命令，默认键 = Typora 对照，双平台）；设置页分组展示 + 点「修改」按键捕获重绑（裸字母/数字拒绝、Esc 取消、冲突自动让位并提示、逐条/全部重置）；生效链路 = docState 参数化注入 + EditorHost 订阅 Compartment 热重配（同一 Compartment 禁止重复出现，覆盖走 baseExtensions 参数而非追加）。菜单栏加速键暂不参与自定义（页面有注明）。
+- **验证**：新增 keybindings.test 6 用例（注册表默认/覆盖/捕获/匹配/显示化/热重配）+ modals.test 改造 SettingsPage 用例 → **43 文件 / 331 用例**全绿；typecheck×3 + lint + build:web 通过。

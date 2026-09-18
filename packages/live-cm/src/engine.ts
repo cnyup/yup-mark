@@ -5,7 +5,7 @@
  * - ⌘/Ctrl+点击 打开链接或图片的源地址
  * - 选中文本后输入 * ` $ ~ 自动包裹为对应 Markdown 语法
  */
-import { RangeSet, StateEffect, StateField, type Extension } from '@codemirror/state'
+import { Compartment, RangeSet, StateEffect, StateField, type Extension } from '@codemirror/state'
 import { EditorView, ViewPlugin, keymap, type DecorationSet, type ViewUpdate } from '@codemirror/view'
 import { syntaxTree } from '@codemirror/language'
 import type { SyntaxNode } from '@lezer/common'
@@ -16,7 +16,7 @@ import { nearestBlock, topLevelBlocks } from './blocks'
 import { docDirField } from './docDir'
 import { smartPasteUrl } from './smartPaste'
 import { openEditorContextMenu, tableMarkdown } from './contextMenu'
-import { IS_MAC } from './platform'
+import { effectiveBindings } from './keybindings'
 import {
   focusModeField,
   sourceModeField,
@@ -36,49 +36,7 @@ import {
   selectWordAtCursor,
   wrapSelectionWith,
 } from './commands'
-import { adjustListIndentLines, renumberOrderedLines, type BlockKind } from './blockOps'
-
-/** 段落快捷键（Typora 官方对照，双平台一致）：⌘0 正文 / ⌘1-6 标题 */
-const BLOCK_KEYS: ReadonlyArray<{ key: string; kind: BlockKind }> = [
-  { key: 'Mod-0', kind: 'paragraph' },
-  { key: 'Mod-1', kind: 'h1' },
-  { key: 'Mod-2', kind: 'h2' },
-  { key: 'Mod-3', kind: 'h3' },
-  { key: 'Mod-4', kind: 'h4' },
-  { key: 'Mod-5', kind: 'h5' },
-  { key: 'Mod-6', kind: 'h6' },
-]
-
-/** 列表/引用/任务（Typora 官方两套：mac ⌘⌥ 系，Win Ctrl+Shift 系） */
-const LIST_KEYS_MAC: ReadonlyArray<{ key: string; kind: BlockKind }> = [
-  { key: 'Mod-Alt-u', kind: 'ul' },
-  { key: 'Mod-Alt-o', kind: 'ol' },
-  { key: 'Mod-Alt-q', kind: 'quote' },
-  { key: 'Mod-Alt-x', kind: 'task' },
-]
-const LIST_KEYS_WIN: ReadonlyArray<{ key: string; kind: BlockKind }> = [
-  { key: 'Mod-Shift-]', kind: 'ul' },
-  { key: 'Mod-Shift-[', kind: 'ol' },
-  { key: 'Mod-Shift-q', kind: 'quote' },
-  { key: 'Mod-Shift-x', kind: 'task' },
-]
-
-const blockBinding = ({ key, kind }: { key: string; kind: BlockKind }) => ({
-  key,
-  run: (v: EditorView) => applyBlockKindToSelection(v, kind),
-})
-
-/** 插入块（Typora 官方两套：mac ⌘⌥ 系，Win Ctrl+Shift 系 / Ctrl+T） */
-const INSERT_KEYS_MAC = [
-  { key: 'Mod-Alt-c', run: (v: EditorView) => insertBlockSnippet(v, '```\n\n```', 4) },
-  { key: 'Mod-Alt-b', run: (v: EditorView) => insertBlockSnippet(v, '$$\n\n$$', 3) },
-  { key: 'Mod-Alt-t', run: (v: EditorView) => insertBlockSnippet(v, tableMarkdown(3, 4)) },
-]
-const INSERT_KEYS_WIN = [
-  { key: 'Mod-Shift-k', run: (v: EditorView) => insertBlockSnippet(v, '```\n\n```', 4) },
-  { key: 'Mod-Shift-m', run: (v: EditorView) => insertBlockSnippet(v, '$$\n\n$$', 3) },
-  { key: 'Mod-t', run: (v: EditorView) => insertBlockSnippet(v, tableMarkdown(3, 4)) },
-]
+import { adjustListIndentLines, renumberOrderedLines } from './blockOps'
 
 /** 光标紧邻表格时按上/下键 → 聚焦表格首/末单元格（而不是落进被替换的源码文本里）。
  *  覆盖三种位置：块内、块间空行（空隙）、表格首尾边界。 */
@@ -181,58 +139,71 @@ function openSearchPanelWithReplaceFocus(focusReplace: boolean) {
   }
 }
 
-/** 表格键盘导航 + 段落/格式/编辑组快捷键（Typora 官方对照；需排在 defaultKeymap 之前） */
-export const tableAndFormatKeys: Extension[] = [
-  keymap.of([
-    { key: 'ArrowDown', run: (v) => enterNeighborTable(v, 'down') },
-    { key: 'ArrowUp', run: (v) => enterNeighborTable(v, 'up') },
-    // 列表行 Tab/Shift-Tab 升降层级（非列表行回落 CM 默认空格缩进）
-    { key: 'Tab', run: (v) => adjustListIndent(v, 1) },
-    { key: 'Shift-Tab', run: (v) => adjustListIndent(v, -1) },
-    // 查找替换（Typora：⌘F 查找；mac ⌥⌘F / Win Ctrl+H 进替换面板）
-    { key: 'Mod-f', run: openSearchPanelWithReplaceFocus(false) },
-    ...(IS_MAC
-      ? [{ key: 'Mod-Alt-f', run: openSearchPanelWithReplaceFocus(true) }]
-      : [{ key: 'Mod-h', run: openSearchPanelWithReplaceFocus(true) }]),
-    // 跳到文档首/尾：Win Ctrl+Home/End（CM 默认键位已含）；mac ⌘↑/⌘↓
-    { key: 'Mod-ArrowUp', run: cursorDocStart, shift: selectDocStart },
-    { key: 'Mod-ArrowDown', run: cursorDocEnd, shift: selectDocEnd },
-    // 标题级别升降（⌘= / ⌘-，Win Ctrl+= / Ctrl+-）
-    { key: 'Mod-=', run: (v) => adjustHeadingLevel(v, 1) },
-    { key: 'Mod--', run: (v) => adjustHeadingLevel(v, -1) },
-    // 编辑组：选行/句子 ⌘L、选词 ⌘D、删词 ⇧⌘D、跳转到选区 ⌘J（Win 对应 Ctrl 系）
-    { key: 'Mod-l', run: selectLineOrSentence },
-    { key: 'Mod-d', run: selectWordAtCursor },
-    { key: 'Mod-Shift-d', run: deleteWordAtCursor },
-    { key: 'Mod-j', run: jumpToSelection },
-    // 视图三件套（Typora）：源码模式 ⌘/（覆盖 CM6 的注释默认键）、专注 F8、打字机 F9
-    { key: 'Mod-/', run: toggleSourceMode },
-    { key: 'F8', run: toggleFocusMode },
-    { key: 'F9', run: toggleTypewriterMode },
-    // 格式组（双平台一致）：加粗/斜体/行内代码/链接/清除格式
-    { key: 'Mod-b', run: (v) => wrapSelectionWith(v, '**', '**') },
-    { key: 'Mod-i', run: (v) => wrapSelectionWith(v, '*', '*') },
-    { key: 'Mod-Shift-`', run: (v) => wrapSelectionWith(v, '`', '`') },
-    { key: 'Mod-k', run: (v) => wrapSelectionWith(v, '[', '](https://)') },
-    { key: 'Mod-\\', run: (v) => clearInlineFormat(v) },
-    ...(IS_MAC
-      ? [
-          // 删除线 ⌃⇧`、图片 ⌃⌘I
-          { key: 'Control-Shift-`', run: (v: EditorView) => wrapSelectionWith(v, '~~', '~~') },
-          { key: 'Control-Mod-i', run: (v: EditorView) => wrapSelectionWith(v, '![', '](https://)') },
-          ...INSERT_KEYS_MAC,
-          ...LIST_KEYS_MAC.map(blockBinding),
-        ]
-      : [
-          // 删除线 Alt+Shift+5、图片 Ctrl+Shift+I
-          { key: 'Alt-Shift-5', run: (v: EditorView) => wrapSelectionWith(v, '~~', '~~') },
-          { key: 'Mod-Shift-i', run: (v: EditorView) => wrapSelectionWith(v, '![', '](https://)') },
-          ...INSERT_KEYS_WIN,
-          ...LIST_KEYS_WIN.map(blockBinding),
-        ]),
-    ...BLOCK_KEYS.map(blockBinding),
-  ]),
-]
+/** 命令 id → 执行器（键位由 keybindings.ts 注册表 + 覆盖解析） */
+const COMMAND_RUNNERS: Record<string, (v: EditorView) => boolean> = {
+  'find.open': openSearchPanelWithReplaceFocus(false),
+  'find.replace': openSearchPanelWithReplaceFocus(true),
+  'edit.heading-up': (v) => adjustHeadingLevel(v, 1),
+  'edit.heading-down': (v) => adjustHeadingLevel(v, -1),
+  'edit.select-line': selectLineOrSentence,
+  'edit.select-word': selectWordAtCursor,
+  'edit.delete-word': deleteWordAtCursor,
+  'edit.jump-selection': jumpToSelection,
+  'view.source': toggleSourceMode,
+  'view.focus': toggleFocusMode,
+  'view.typewriter': toggleTypewriterMode,
+  'format.bold': (v) => wrapSelectionWith(v, '**', '**'),
+  'format.italic': (v) => wrapSelectionWith(v, '*', '*'),
+  'format.code': (v) => wrapSelectionWith(v, '`', '`'),
+  'format.strike': (v) => wrapSelectionWith(v, '~~', '~~'),
+  'format.link': (v) => wrapSelectionWith(v, '[', '](https://)'),
+  'format.image': (v) => wrapSelectionWith(v, '![', '](https://)'),
+  'format.clear': (v) => clearInlineFormat(v),
+  'insert.code': (v) => insertBlockSnippet(v, '```\n\n```', 4),
+  'insert.math': (v) => insertBlockSnippet(v, '$$\n\n$$', 3),
+  'insert.table': (v) => insertBlockSnippet(v, tableMarkdown(3, 4)),
+  'list.ul': (v) => applyBlockKindToSelection(v, 'ul'),
+  'list.ol': (v) => applyBlockKindToSelection(v, 'ol'),
+  'list.quote': (v) => applyBlockKindToSelection(v, 'quote'),
+  'list.task': (v) => applyBlockKindToSelection(v, 'task'),
+  'paragraph.body': (v) => applyBlockKindToSelection(v, 'paragraph'),
+  'paragraph.h1': (v) => applyBlockKindToSelection(v, 'h1'),
+  'paragraph.h2': (v) => applyBlockKindToSelection(v, 'h2'),
+  'paragraph.h3': (v) => applyBlockKindToSelection(v, 'h3'),
+  'paragraph.h4': (v) => applyBlockKindToSelection(v, 'h4'),
+  'paragraph.h5': (v) => applyBlockKindToSelection(v, 'h5'),
+  'paragraph.h6': (v) => applyBlockKindToSelection(v, 'h6'),
+}
+
+/**
+ * 按注册表构建键位扩展（overrides 为渲染层持久化的显式覆盖，未知 id 忽略）。
+ * 固定键（表格方向导航/列表 Tab/文档首尾）不参与重绑。
+ */
+export function buildTableAndFormatKeys(overrides?: Record<string, string>): Extension[] {
+  const bindings = effectiveBindings(overrides)
+  const rebindable = Object.entries(bindings)
+    .map(([id, key]) => ({ key, run: COMMAND_RUNNERS[id] }))
+    .filter((e): e is { key: string; run: (v: EditorView) => boolean } => typeof e.run === 'function')
+  return [
+    keymap.of([
+      { key: 'ArrowDown', run: (v) => enterNeighborTable(v, 'down') },
+      { key: 'ArrowUp', run: (v) => enterNeighborTable(v, 'up') },
+      // 列表行 Tab/Shift-Tab 升降层级（非列表行回落 CM 默认空格缩进）
+      { key: 'Tab', run: (v) => adjustListIndent(v, 1) },
+      { key: 'Shift-Tab', run: (v) => adjustListIndent(v, -1) },
+      // 跳到文档首/尾：Win Ctrl+Home/End（CM 默认键位已含）；mac ⌘↑/⌘↓
+      { key: 'Mod-ArrowUp', run: cursorDocStart, shift: selectDocStart },
+      { key: 'Mod-ArrowDown', run: cursorDocEnd, shift: selectDocEnd },
+      ...rebindable,
+    ]),
+  ]
+}
+
+/** 默认键位（= 全部命令走平台默认）；兼容既有引用 */
+export const tableAndFormatKeys: Extension[] = buildTableAndFormatKeys()
+
+/** 键位热重配通道：设置页改快捷键后，宿主 dispatch reconfigure（见 EditorHost） */
+export const formatKeysCompartment = new Compartment()
 
 export { setDocDir } from './docDir'
 
