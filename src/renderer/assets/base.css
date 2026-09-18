@@ -379,6 +379,15 @@ body {
 .file-tree {
   font-size: 13px;
   padding-bottom: 48px;
+  /* 撑满侧栏体：空白区也是右键目标（工作区级菜单） */
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.file-tree__blank {
+  flex: 1;
+  min-height: 80px;
 }
 
 .file-tree__root {

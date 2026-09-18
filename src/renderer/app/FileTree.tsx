@@ -207,6 +207,31 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
       {loading ? <div className="file-tree__hint">{t('sidebar.loading')}</div> : null}
       {body}
 
+      {/* 空白区：工作区级菜单（新建/刷新/Finder） */}
+      <ContextMenu.Root>
+        <ContextMenu.Trigger asChild>
+          <div className="file-tree__blank" />
+        </ContextMenu.Trigger>
+        <ContextMenu.Portal>
+          <ContextMenu.Content className="ctx-menu">
+            <ContextMenu.Item asChild>
+              <button type="button" onSelect={() => askNewFile(root)}>{t('tree.newFile')}</button>
+            </ContextMenu.Item>
+            <ContextMenu.Item asChild>
+              <button type="button" onSelect={() => askNewFolder(root)}>{t('tree.newFolder')}</button>
+            </ContextMenu.Item>
+            <ContextMenu.Item asChild>
+              <button type="button" onSelect={refresh}>{t('sidebar.refresh')}</button>
+            </ContextMenu.Item>
+            <ContextMenu.Item asChild>
+              <button type="button" onSelect={() => void window.yupmark.revealInFileManager(root)}>
+                {t('tree.reveal')}
+              </button>
+            </ContextMenu.Item>
+          </ContextMenu.Content>
+        </ContextMenu.Portal>
+      </ContextMenu.Root>
+
       {prompt ? (
         <PromptModal
           title={prompt.title}
