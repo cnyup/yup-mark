@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import * as ContextMenu from '@radix-ui/react-context-menu'
 import type { FileEntry, FileSortMode } from '@shared/ipc'
 import { basename } from '@yupmark/live-cm/paths'
 import { useWorkspaceStore } from './store/workspaceStore'
@@ -16,16 +17,19 @@ import {
 import { PromptModal } from './PromptModal'
 import { IconDoc, IconFolder } from './icons'
 
-interface MenuState {
-  x: number
-  y: number
-  entry: FileEntry
-}
-
 interface PromptState {
   title: string
   initial: string
   onConfirm: (value: string) => void
+}
+
+/** 右键动作集（树行/列表卡片/根目录头共用） */
+interface EntryActions {
+  onNewFile: (dir: string) => void
+  onNewFolder: (dir: string) => void
+  onRename: (entry: FileEntry) => void
+  onDelete: (entry: FileEntry) => void
+  onReveal: (path: string) => void
 }
 
 export interface FileTreeProps {
@@ -42,7 +46,6 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
   const tree = useWorkspaceStore((s) => s.tree)
   const loading = useWorkspaceStore((s) => s.treeLoading)
   const root = useWorkspaceStore((s) => s.workspaceRoot)
-  const [menu, setMenu] = useState<MenuState | null>(null)
   const [prompt, setPrompt] = useState<PromptState | null>(null)
 
   const refresh = () => void useWorkspaceStore.getState().refreshTree()
@@ -50,16 +53,6 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
   async function openFile(path: string): Promise<void> {
     const res = await window.yupmark.readFile(path)
     if (res.ok) useWorkspaceStore.getState().openDoc(path, res.data)
-  }
-
-  function openMenu(e: React.MouseEvent, entry: FileEntry): void {
-    e.preventDefault()
-    e.stopPropagation()
-    setMenu({ x: e.clientX, y: e.clientY, entry })
-  }
-
-  function closeMenu(): void {
-    setMenu(null)
   }
 
   function askNewFile(dir: string): void {
@@ -124,6 +117,14 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
     }
   }
 
+  const actions: EntryActions = {
+    onNewFile: askNewFile,
+    onNewFolder: askNewFolder,
+    onRename: askRename,
+    onDelete: (entry) => void doDelete(entry),
+    onReveal: (path) => void window.yupmark.revealInFileManager(path),
+  }
+
   if (!root) {
     return (
       <div className="file-tree file-tree--empty">
@@ -165,13 +166,13 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
         <div key={g.dir || '.'} className="file-tree__group-wrap">
           <div className="file-tree__group">{g.dir === '' ? basename(root) : g.dir}</div>
           {g.files.map((f) => (
-            <CardRow key={f.path} file={f} showRelDir={false} onOpen={openFile} onMenu={openMenu} />
+            <CardRow key={f.path} file={f} showRelDir={false} onOpen={openFile} actions={actions} />
           ))}
         </div>
       ))
     } else {
       body = sortFlat(flat, sort).map((f) => (
-        <CardRow key={f.path} file={f} showRelDir onOpen={openFile} onMenu={openMenu} />
+        <CardRow key={f.path} file={f} showRelDir onOpen={openFile} actions={actions} />
       ))
     }
   } else {
@@ -185,7 +186,7 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
             depth={0}
             forceExpand={searching}
             onOpen={openFile}
-            onMenu={openMenu}
+            actions={actions}
           />
         ))
       ) : (
@@ -194,36 +195,17 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
   }
 
   return (
-    <div className="file-tree" onClick={closeMenu}>
+    <div className="file-tree">
       {view === 'tree' ? (
-        <div
-          className="file-tree__root"
-          onContextMenu={(e) => openMenu(e, { name: basename(root), path: root, dir: true })}
-        >
-          {basename(root)}
-        </div>
+        <ContextMenu.Root>
+          <ContextMenu.Trigger asChild>
+            <div className="file-tree__root">{basename(root)}</div>
+          </ContextMenu.Trigger>
+          <EntryMenuContent entry={{ name: basename(root), path: root, dir: true }} actions={actions} />
+        </ContextMenu.Root>
       ) : null}
       {loading ? <div className="file-tree__hint">{t('sidebar.loading')}</div> : null}
       {body}
-
-      {menu ? (
-        <>
-          <div className="ctx-overlay" onClick={closeMenu} onContextMenu={(e) => e.preventDefault()} />
-          <div className="ctx-menu" style={{ left: menu.x, top: menu.y }}>
-            {menu.entry.dir ? (
-              <>
-                <button type="button" onClick={() => { closeMenu(); askNewFile(menu.entry.path) }}>{t('tree.newFile')}</button>
-                <button type="button" onClick={() => { closeMenu(); askNewFolder(menu.entry.path) }}>{t('tree.newFolder')}</button>
-              </>
-            ) : null}
-            <button type="button" onClick={() => { closeMenu(); askRename(menu.entry) }}>{t('tree.rename')}</button>
-            <button type="button" onClick={() => { closeMenu(); void doDelete(menu.entry) }}>{t('tree.delete')}</button>
-            <button type="button" onClick={() => { closeMenu(); void window.yupmark.revealInFileManager(menu.entry.path) }}>
-              {t('tree.reveal')}
-            </button>
-          </div>
-        </>
-      ) : null}
 
       {prompt ? (
         <PromptModal
@@ -240,34 +222,68 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
   )
 }
 
+/** 右键菜单内容（Radix ContextMenu：键盘导航/定位由库提供；选中即自动关闭） */
+function EntryMenuContent({ entry, actions }: { entry: FileEntry; actions: EntryActions }) {
+  const { t } = useTranslation()
+  return (
+    <ContextMenu.Portal>
+      <ContextMenu.Content className="ctx-menu">
+        {entry.dir ? (
+          <>
+            <ContextMenu.Item asChild>
+              <button type="button" onSelect={() => actions.onNewFile(entry.path)}>{t('tree.newFile')}</button>
+            </ContextMenu.Item>
+            <ContextMenu.Item asChild>
+              <button type="button" onSelect={() => actions.onNewFolder(entry.path)}>{t('tree.newFolder')}</button>
+            </ContextMenu.Item>
+          </>
+        ) : null}
+        <ContextMenu.Item asChild>
+          <button type="button" onSelect={() => actions.onRename(entry)}>{t('tree.rename')}</button>
+        </ContextMenu.Item>
+        <ContextMenu.Item asChild>
+          <button type="button" onSelect={() => actions.onDelete(entry)}>{t('tree.delete')}</button>
+        </ContextMenu.Item>
+        <ContextMenu.Item asChild>
+          <button type="button" onSelect={() => actions.onReveal(entry.path)}>{t('tree.reveal')}</button>
+        </ContextMenu.Item>
+      </ContextMenu.Content>
+    </ContextMenu.Portal>
+  )
+}
+
 /** 列表视图卡片行：主名加粗 + 扩展名灰 + 预览第二行 */
 function CardRow({
   file,
   showRelDir,
   onOpen,
-  onMenu,
+  actions,
 }: {
   file: FlatFile
   /** 非分组模式下在右侧显示相对目录提示 */
   showRelDir: boolean
   onOpen: (path: string) => void
-  onMenu: (e: React.MouseEvent, entry: FileEntry) => void
+  actions: EntryActions
 }) {
   const activePath = useWorkspaceStore((s) => s.tabs.find((x) => x.id === s.activeId)?.path ?? null)
   const { stem, ext } = splitNameExt(file.name)
   return (
-    <div
-      className={`file-tree__card${file.path === activePath ? ' file-tree__card--active' : ''}`}
-      onClick={() => onOpen(file.path)}
-      onContextMenu={(e) => onMenu(e, { name: file.name, path: file.path, dir: false })}
-    >
-      <div className="file-tree__card-title">
-        <span className="file-tree__card-stem">{stem}</span>
-        {ext ? <span className="file-tree__card-ext">{ext}</span> : null}
-        {showRelDir && file.relDir ? <span className="file-tree__reldir">{file.relDir}</span> : null}
-      </div>
-      {file.preview ? <div className="file-tree__card-preview">{file.preview}</div> : null}
-    </div>
+    <ContextMenu.Root>
+      <ContextMenu.Trigger asChild>
+        <div
+          className={`file-tree__card${file.path === activePath ? ' file-tree__card--active' : ''}`}
+          onClick={() => onOpen(file.path)}
+        >
+          <div className="file-tree__card-title">
+            <span className="file-tree__card-stem">{stem}</span>
+            {ext ? <span className="file-tree__card-ext">{ext}</span> : null}
+            {showRelDir && file.relDir ? <span className="file-tree__reldir">{file.relDir}</span> : null}
+          </div>
+          {file.preview ? <div className="file-tree__card-preview">{file.preview}</div> : null}
+        </div>
+      </ContextMenu.Trigger>
+      <EntryMenuContent entry={{ name: file.name, path: file.path, dir: false }} actions={actions} />
+    </ContextMenu.Root>
   )
 }
 
@@ -276,14 +292,14 @@ function TreeNode({
   depth,
   forceExpand,
   onOpen,
-  onMenu,
+  actions,
 }: {
   node: FileEntry
   depth: number
   /** 搜索态：忽略折叠状态，匹配分支全部展开 */
   forceExpand: boolean
   onOpen: (path: string) => void
-  onMenu: (e: React.MouseEvent, entry: FileEntry) => void
+  actions: EntryActions
 }) {
   const expanded = useWorkspaceStore((s) => !!s.expandedDirs[node.path])
   const activePath = useWorkspaceStore((s) => s.tabs.find((x) => x.id === s.activeId)?.path ?? null)
@@ -291,23 +307,27 @@ function TreeNode({
 
   return (
     <>
-      <div
-        className={`file-tree__row${node.path === activePath ? ' file-tree__row--active' : ''}`}
-        style={{ paddingLeft: 6 + depth * 14 }}
-        onClick={() => {
-          if (node.dir) useWorkspaceStore.getState().toggleDir(node.path)
-          else onOpen(node.path)
-        }}
-        onContextMenu={(e) => onMenu(e, node)}
-      >
-        <span className={`file-tree__chevron${node.dir ? '' : ' file-tree__chevron--leaf'}${open ? ' file-tree__chevron--open' : ''}`}>
-          {node.dir ? '▸' : ''}
-        </span>
-        <span className={`file-tree__row-icon${node.dir ? ' file-tree__row-icon--dir' : ''}`}>
-          {node.dir ? <IconFolder size={14} /> : <IconDoc size={14} />}
-        </span>
-        <span className={`file-tree__name${node.dir ? ' file-tree__name--dir' : ''}`}>{node.name}</span>
-      </div>
+      <ContextMenu.Root>
+        <ContextMenu.Trigger asChild>
+          <div
+            className={`file-tree__row${node.path === activePath ? ' file-tree__row--active' : ''}`}
+            style={{ paddingLeft: 6 + depth * 14 }}
+            onClick={() => {
+              if (node.dir) useWorkspaceStore.getState().toggleDir(node.path)
+              else onOpen(node.path)
+            }}
+          >
+            <span className={`file-tree__chevron${node.dir ? '' : ' file-tree__chevron--leaf'}${open ? ' file-tree__chevron--open' : ''}`}>
+              {node.dir ? '▸' : ''}
+            </span>
+            <span className={`file-tree__row-icon${node.dir ? ' file-tree__row-icon--dir' : ''}`}>
+              {node.dir ? <IconFolder size={14} /> : <IconDoc size={14} />}
+            </span>
+            <span className={`file-tree__name${node.dir ? ' file-tree__name--dir' : ''}`}>{node.name}</span>
+          </div>
+        </ContextMenu.Trigger>
+        <EntryMenuContent entry={node} actions={actions} />
+      </ContextMenu.Root>
       {node.dir && open
         ? (node.children ?? []).map((child) => (
             <TreeNode
@@ -316,7 +336,7 @@ function TreeNode({
               depth={depth + 1}
               forceExpand={forceExpand}
               onOpen={onOpen}
-              onMenu={onMenu}
+              actions={actions}
             />
           ))
         : null}

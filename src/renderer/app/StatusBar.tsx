@@ -4,6 +4,7 @@ import type { EditorView } from '@codemirror/view'
 import { basename } from '@yupmark/live-cm/paths'
 import { useWorkspaceStore } from './store/workspaceStore'
 import { IconPanel } from './icons'
+import { Tip } from './ui/Tip'
 import {
   subscribeViewModes,
   toggleFocusMode,
@@ -74,17 +75,17 @@ export function StatusBar() {
           </span>
         </button>
       ))}
-      <button
-        type="button"
-        className="status-bar__toggle"
-        data-tip={t('sidebar.toggle')}
-        data-tip-pos="left"
-        aria-label={t('sidebar.toggle')}
-        aria-pressed={sidebarOpen}
-        onClick={() => useWorkspaceStore.getState().toggleSidebar()}
-      >
-        <IconPanel size={14} />
-      </button>
+      <Tip text={t('sidebar.toggle')} side="left">
+        <button
+          type="button"
+          className="status-bar__toggle"
+          aria-label={t('sidebar.toggle')}
+          aria-pressed={sidebarOpen}
+          onClick={() => useWorkspaceStore.getState().toggleSidebar()}
+        >
+          <IconPanel size={14} />
+        </button>
+      </Tip>
     </footer>
   )
 }

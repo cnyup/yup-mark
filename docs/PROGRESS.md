@@ -141,3 +141,11 @@
 - **查找替换**：`@codemirror/search` 的 `search()` 进 baseExtensions（与 liveRender 装饰共存无冲突）；键位挂 tableAndFormatKeys——⌘F 查找、mac ⌥⌘F / Win Ctrl+H 打开面板并 best-effort 聚焦替换框（CM6 无官方 API，DOM 定位第二输入框）；面板 CSS 覆盖为 Typora 风（编辑区右上浮层、7 套主题走 CSS 变量；命中高亮主色/当前反色）。
 - **列表 Tab 升降层级**：`adjustListIndent(view, ±1)`（engine.ts）+ 纯函数 `adjustListIndentLines`/`renumberOrderedLines`（blockOps.ts）——列表行 Tab 加 2 空格、Shift-Tab 去 2 空格（0 缩进回落默认）；有序列表栈式重编号（同级连续 1..n、深缩进子项不打断父级、空行宽松保持）；非列表行返回 false 回落 CM 默认缩进；剔除文档末尾幻影空行。
 - **验证**：新增 15 用例（listIndent 12 + search 3：面板/命中进渲染态块/replaceAll 跨隐藏语法）→ 基线 **41 文件 / 321 用例**全绿；typecheck×3 + lint（补 src-tauri 构建产物 ignore）通过。
+
+## 15. TR4 完成（2026-09-18，Radix 无头组件接入）
+
+- **Dialog**（`ui/Modal.tsx`）：三个弹窗（Settings/Prompt/Conflict）迁移 Radix Dialog——焦点圈定/Esc/外点/aria/滚动锁定白得，DOM 结构与 `.modal-overlay`+`.modal` 类名不变；CSS 改 `.modal` 自居中（Overlay/Content 兄弟节点）；PromptModal 经 `initialFocus` 聚焦输入框；ConflictModal 的 Esc/外点 = 「稍后」。
+- **ContextMenu**（FileTree）：手绘坐标菜单（MenuState + ctx-overlay）整体删除，树行/列表卡片/根目录头包 Radix ContextMenu——键盘导航/定位/选中即关白得；`.ctx-menu` 只留外观（定位交 Radix）。Sidebar ops 弹层仍用 `.ctx-overlay`（保留）。
+- **Tooltip**（`ui/Tip.tsx`）：Sidebar/StatusBar 13 处 data-tip 纯 CSS 提示 → Radix Tooltip（350ms 延迟、键盘聚焦可达）；`[data-tip]` CSS 块删除，`.tip` 沿用原视觉。
+- **验证**：新增 modals.test 4 用例（portal/role=dialog/初始焦点/Enter/Esc/文件与目录菜单项集）；**42 文件 / 325 用例**全绿；typecheck×3 + lint + vite build 通过。Radix onSelect 激活链路 jsdom 不可达 → GUI 手验。
+- **待用户手验**：7 套主题 × 弹窗/右键菜单/提示的视觉回归（三平台 WebView）。

@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { Modal } from './ui/Modal'
 import {
   LOCALE_OPTIONS,
   THEME_OPTIONS,
@@ -27,50 +28,48 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const setLocaleMode = useAppSettings((s) => s.setLocaleMode)
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal__title">{t('settings.title')}</div>
+    <Modal onClose={onClose}>
+      <div className="modal__title">{t('settings.title')}</div>
 
-        <label className="settings__label">
-          {t('settings.theme')}
-          <select
-            className="settings__select"
-            value={themeMode}
-            onChange={(e) => setThemeMode(e.target.value as ThemeMode)}
-          >
-            {THEME_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt === 'auto' ? t(THEME_LABELS[opt]) : THEME_LABELS[opt]}
-              </option>
-            ))}
-          </select>
-        </label>
+      <label className="settings__label">
+        {t('settings.theme')}
+        <select
+          className="settings__select"
+          value={themeMode}
+          onChange={(e) => setThemeMode(e.target.value as ThemeMode)}
+        >
+          {THEME_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt === 'auto' ? t(THEME_LABELS[opt]) : THEME_LABELS[opt]}
+            </option>
+          ))}
+        </select>
+      </label>
 
-        <label className="settings__label">
-          {t('settings.language')}
-          <select
-            className="settings__select"
-            value={localeMode}
-            onChange={(e) => setLocaleMode(e.target.value as LocaleMode)}
-          >
-            {LOCALE_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt === 'auto'
-                  ? t('settings.language.auto')
-                  : opt === 'zh-CN'
-                    ? '简体中文'
-                    : 'English'}
-              </option>
-            ))}
-          </select>
-        </label>
+      <label className="settings__label">
+        {t('settings.language')}
+        <select
+          className="settings__select"
+          value={localeMode}
+          onChange={(e) => setLocaleMode(e.target.value as LocaleMode)}
+        >
+          {LOCALE_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt === 'auto'
+                ? t('settings.language.auto')
+                : opt === 'zh-CN'
+                  ? '简体中文'
+                  : 'English'}
+            </option>
+          ))}
+        </select>
+      </label>
 
-        <div className="modal__actions">
-          <button type="button" className="modal__btn modal__btn--primary" onClick={onClose}>
-            {t('prompt.ok')}
-          </button>
-        </div>
+      <div className="modal__actions">
+        <button type="button" className="modal__btn modal__btn--primary" onClick={onClose}>
+          {t('prompt.ok')}
+        </button>
       </div>
-    </div>
+    </Modal>
   )
 }

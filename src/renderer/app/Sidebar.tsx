@@ -6,6 +6,7 @@ import { useWorkspaceStore } from './store/workspaceStore'
 import { FileTree } from './FileTree'
 import { OutlinePanel } from './OutlinePanel'
 import { PromptModal } from './PromptModal'
+import { Tip } from './ui/Tip'
 import {
   IconAZ,
   IconCheck,
@@ -94,16 +95,16 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar__header">
-        <button
-          type="button"
-          className="sidebar__icon-btn"
-          data-tip={panel === 'files' ? t('sidebar.toOutline') : t('sidebar.toFiles')}
-          data-tip-pos="bottom"
-          aria-label={panel === 'files' ? t('sidebar.toOutline') : t('sidebar.toFiles')}
-          onClick={() => useWorkspaceStore.getState().setPanel(panel === 'files' ? 'outline' : 'files')}
-        >
-          {panel === 'files' ? <IconOutline /> : <IconFolder />}
-        </button>
+        <Tip text={panel === 'files' ? t('sidebar.toOutline') : t('sidebar.toFiles')} side="bottom">
+          <button
+            type="button"
+            className="sidebar__icon-btn"
+            aria-label={panel === 'files' ? t('sidebar.toOutline') : t('sidebar.toFiles')}
+            onClick={() => useWorkspaceStore.getState().setPanel(panel === 'files' ? 'outline' : 'files')}
+          >
+            {panel === 'files' ? <IconOutline /> : <IconFolder />}
+          </button>
+        </Tip>
 
         <div className="sidebar__title">{panel === 'files' ? t('sidebar.files') : t('sidebar.outline')}</div>
 
@@ -120,28 +121,28 @@ export function Sidebar() {
                   if (e.key === 'Escape') closeSearch()
                 }}
               />
-              <button
-                type="button"
-                className="sidebar__icon-btn"
-                data-tip={t('sidebar.searchClose')}
-                data-tip-pos="bottom"
-                aria-label={t('sidebar.searchClose')}
-                onClick={closeSearch}
-              >
-                <IconX size={13} />
-              </button>
+              <Tip text={t('sidebar.searchClose')} side="bottom">
+                <button
+                  type="button"
+                  className="sidebar__icon-btn"
+                  aria-label={t('sidebar.searchClose')}
+                  onClick={closeSearch}
+                >
+                  <IconX size={13} />
+                </button>
+              </Tip>
             </div>
           ) : (
-            <button
-              type="button"
-              className="sidebar__icon-btn sidebar__icon-btn--end"
-              data-tip={t('sidebar.search')}
-              data-tip-pos="bottom"
-              aria-label={t('sidebar.search')}
-              onClick={() => setSearchOpen(true)}
-            >
-              <IconSearch />
-            </button>
+            <Tip text={t('sidebar.search')} side="bottom">
+              <button
+                type="button"
+                className="sidebar__icon-btn sidebar__icon-btn--end"
+                aria-label={t('sidebar.search')}
+                onClick={() => setSearchOpen(true)}
+              >
+                <IconSearch />
+              </button>
+            </Tip>
           )
         ) : null}
       </div>
@@ -152,15 +153,16 @@ export function Sidebar() {
 
       {filesActive ? (
         <div className={`sidebar__dock${opsOpen ? ' sidebar__dock--pinned' : ''}`}>
-          <button
-            type="button"
-            className="sidebar__icon-btn"
-            data-tip={t('sidebar.opNewFile')}
-            aria-label={t('sidebar.opNewFile')}
-            onClick={askNewFile}
-          >
-            <IconPlus />
-          </button>
+          <Tip text={t('sidebar.opNewFile')}>
+            <button
+              type="button"
+              className="sidebar__icon-btn"
+              aria-label={t('sidebar.opNewFile')}
+              onClick={askNewFile}
+            >
+              <IconPlus />
+            </button>
+          </Tip>
 
           <div className="sidebar__dock-ops">
             {opsOpen ? (
@@ -234,11 +236,10 @@ export function Sidebar() {
                   <div className="sidebar-popover__label">{t('sidebar.sort')}</div>
                   <div className="sidebar-popover__sorts">
                     {SORT_OPTIONS.map((opt) => (
+                      <Tip key={opt.mode} text={t(opt.tipKey)}>
                       <button
-                        key={opt.mode}
                         type="button"
                         className={`sidebar-popover__sort${sort === opt.mode ? ' sidebar-popover__sort--active' : ''}`}
-                        data-tip={t(opt.tipKey)}
                         aria-label={t(opt.tipKey)}
                         aria-pressed={sort === opt.mode}
                         onClick={() => useWorkspaceStore.getState().setFileSort(opt.mode)}
@@ -246,6 +247,7 @@ export function Sidebar() {
                         {opt.icon}
                         {sort === opt.mode ? <IconCheck size={11} className="sidebar-popover__sort-check" /> : null}
                       </button>
+                      </Tip>
                     ))}
                   </div>
 
@@ -274,39 +276,42 @@ export function Sidebar() {
                 </div>
               </>
             ) : null}
-            <button
-              type="button"
-              className="sidebar__dock-name"
-              data-tip={t('sidebar.ops')}
-              aria-label={t('sidebar.ops')}
-              aria-expanded={opsOpen}
-              onClick={() => setOpsOpen((v) => !v)}
-            >
-              <span className="sidebar__dock-name-text">{basename(root!)}</span>
-              <IconChevronDown size={13} />
-            </button>
+            <Tip text={t('sidebar.ops')}>
+              <button
+                type="button"
+                className="sidebar__dock-name"
+                aria-label={t('sidebar.ops')}
+                aria-expanded={opsOpen}
+                onClick={() => setOpsOpen((v) => !v)}
+              >
+                <span className="sidebar__dock-name-text">{basename(root!)}</span>
+                <IconChevronDown size={13} />
+              </button>
+            </Tip>
           </div>
 
-          <button
-            type="button"
-            className="sidebar__icon-btn"
-            data-tip={view === 'tree' ? t('sidebar.listView') : t('sidebar.treeView')}
-            aria-label={view === 'tree' ? t('sidebar.listView') : t('sidebar.treeView')}
-            onClick={() => useWorkspaceStore.getState().setFileView(view === 'tree' ? 'list' : 'tree')}
-          >
-            {view === 'tree' ? <IconList /> : <IconTree />}
-          </button>
+          <Tip text={view === 'tree' ? t('sidebar.listView') : t('sidebar.treeView')}>
+            <button
+              type="button"
+              className="sidebar__icon-btn"
+              aria-label={view === 'tree' ? t('sidebar.listView') : t('sidebar.treeView')}
+              onClick={() => useWorkspaceStore.getState().setFileView(view === 'tree' ? 'list' : 'tree')}
+            >
+              {view === 'tree' ? <IconList /> : <IconTree />}
+            </button>
+          </Tip>
 
-          <button
-            type="button"
-            className="sidebar__icon-btn"
-            data-tip={t('sidebar.toggle')}
-            aria-label={t('sidebar.toggle')}
-            aria-pressed={useWorkspaceStore.getState().sidebarOpen}
-            onClick={() => useWorkspaceStore.getState().toggleSidebar()}
-          >
-            <IconPanel />
-          </button>
+          <Tip text={t('sidebar.toggle')}>
+            <button
+              type="button"
+              className="sidebar__icon-btn"
+              aria-label={t('sidebar.toggle')}
+              aria-pressed={useWorkspaceStore.getState().sidebarOpen}
+              onClick={() => useWorkspaceStore.getState().toggleSidebar()}
+            >
+              <IconPanel />
+            </button>
+          </Tip>
         </div>
       ) : null}
 

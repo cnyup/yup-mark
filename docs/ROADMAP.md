@@ -16,7 +16,7 @@ Electron → Tauri 2 原位替换；renderer/kernel/TUI 不动。已确认：Rad
 | TR2 | 原生菜单 + 加速键 + i18n 重建 + About/缩放/全屏 | ✅ 编译级 2026-09-18 |
 | TR3 | 外链 open_external + onCloseRequested 冲刷 + 事件源替换 | ✅ 编译级 2026-09-18 |
 | KP0 | ⌘F/⌥⌘F 查找替换 + 列表 Tab 升降层级（内核补课，原桌面 P0） | ✅ 2026-09-18（321 用例） |
-| TR4 | Radix 无头组件接入 + 7 主题三平台回归 | ⬜ |
+| TR4 | Radix 无头组件接入 + 7 主题三平台回归 | ✅ 代码级 2026-09-18（三平台目测回归待用户手验） |
 | TR5 | 三平台打包 + desktop CI/Release workflow（四端分发收官） | ⬜ |
 | TR6 | 删 Electron 全套 + 文档更新 | ⬜ |
 
