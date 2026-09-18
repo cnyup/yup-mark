@@ -1687,3 +1687,82 @@ body {
   --syntax-comment: #6272a4;
   --syntax-variable: #50fa7b;
 }
+
+/* ==========================================================================
+   查找替换面板（CM6 search，Typora 风：编辑区右上角浮层；7 套主题走同一组变量）
+   ========================================================================== */
+.cm-editor .cm-panels.cm-panels-top {
+  position: absolute;
+  top: 10px;
+  right: 18px;
+  left: auto;
+  z-index: 30;
+  background: none;
+  border-bottom: none;
+}
+
+.cm-editor .cm-panel.cm-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--text-color) 12%, transparent);
+  font-size: 13px;
+  color: var(--text-color);
+  max-width: 480px;
+}
+
+.cm-editor .cm-panel.cm-search input,
+.cm-editor .cm-panel.cm-search button {
+  font: inherit;
+  color: var(--text-color);
+}
+
+.cm-editor .cm-panel.cm-search input {
+  min-width: 150px;
+  padding: 3px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  background: var(--side-bar-bg-color);
+  outline: none;
+}
+
+.cm-editor .cm-panel.cm-search input:focus {
+  border-color: var(--primary-color);
+}
+
+.cm-editor .cm-panel.cm-search button {
+  padding: 3px 9px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  background: var(--bg-color);
+  cursor: pointer;
+}
+
+.cm-editor .cm-panel.cm-search button[name='search'] {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.cm-editor .cm-panel.cm-search label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--meta-content-color);
+  font-size: 12px;
+}
+
+/* 命中高亮：当前命中主色、其余淡显（与渲染态装饰共存，不同 class 层） */
+.cm-editor .cm-searchMatch {
+  background: color-mix(in srgb, var(--primary-color) 22%, transparent);
+  border-radius: 2px;
+}
+
+.cm-editor .cm-searchMatch-selected {
+  background: var(--primary-color);
+  color: var(--bg-color);
+}

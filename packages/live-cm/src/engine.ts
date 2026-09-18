@@ -10,6 +10,7 @@ import { EditorView, ViewPlugin, keymap, type DecorationSet, type ViewUpdate } f
 import { syntaxTree } from '@codemirror/language'
 import type { SyntaxNode } from '@lezer/common'
 import { cursorDocEnd, cursorDocStart, selectDocEnd, selectDocStart } from '@codemirror/commands'
+import { openSearchPanel } from '@codemirror/search'
 import { buildLiveDecorations } from './rules'
 import { nearestBlock, topLevelBlocks } from './blocks'
 import { docDirField } from './docDir'
@@ -35,7 +36,7 @@ import {
   selectWordAtCursor,
   wrapSelectionWith,
 } from './commands'
-import type { BlockKind } from './blockOps'
+import { adjustListIndentLines, renumberOrderedLines, type BlockKind } from './blockOps'
 
 /** 段落快捷键（Typora 官方对照，双平台一致）：⌘0 正文 / ⌘1-6 标题 */
 const BLOCK_KEYS: ReadonlyArray<{ key: string; kind: BlockKind }> = [
@@ -133,11 +134,66 @@ function focusTableCell(view: EditorView, tableFrom: number, dir: 'up' | 'down')
   return true
 }
 
+/**
+ * 列表行 Tab/Shift-Tab 升降层级（Typora 语义；非列表行返回 false 回落默认缩进）。
+ * 升降后对全文档有序列表重编号（同级缩进连续 ol 行按出现顺序 1..n），
+ * 逐行生成最小替换，光标由事务自动映射。
+ */
+export function adjustListIndent(view: EditorView, delta: 1 | -1): boolean {
+  const { state } = view
+  const sel = state.selection.main
+  const firstLine = state.doc.lineAt(Math.min(sel.from, sel.to))
+  const lastLine = state.doc.lineAt(Math.max(sel.from, sel.to))
+  const lines: string[] = []
+  for (let n = firstLine.number; n <= lastLine.number; n++) lines.push(state.doc.line(n).text)
+  // 选区触到文档末尾时，末行换行会产生一条幻影空行（lineAt(doc.length) 落到它），剔除后再判定
+  while (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop()
+  const adjusted = adjustListIndentLines(lines, delta)
+  if (!adjusted) return false
+
+  const oldLines = state.doc.toJSON()
+  const newLines = [...oldLines]
+  for (let i = 0; i < adjusted.length; i++) newLines[firstLine.number - 1 + i] = adjusted[i]
+  for (const [index, renumbered] of renumberOrderedLines(newLines)) newLines[index] = renumbered
+
+  const changes = []
+  for (let n = 1; n <= state.doc.lines; n++) {
+    const line = state.doc.line(n)
+    if (newLines[n - 1] !== line.text) changes.push({ from: line.from, to: line.to, insert: newLines[n - 1] })
+  }
+  if (changes.length === 0) return false
+  view.dispatch({ changes, userEvent: 'input.indent' })
+  return true
+}
+
+/**
+ * 打开查找面板；focusReplace 时把焦点移到替换输入（面板第二个输入框）。
+ * CM6 search 面板没有官方的“聚焦替换框”API，此处 DOM 定位是_best effort_，找不到则停在查找框。
+ */
+function openSearchPanelWithReplaceFocus(focusReplace: boolean) {
+  return (view: EditorView): boolean => {
+    if (!openSearchPanel(view)) return false
+    if (focusReplace) {
+      const inputs = view.dom.querySelectorAll<HTMLElement>('.cm-panel.cm-search input')
+      inputs[1]?.focus()
+    }
+    return true
+  }
+}
+
 /** 表格键盘导航 + 段落/格式/编辑组快捷键（Typora 官方对照；需排在 defaultKeymap 之前） */
 export const tableAndFormatKeys: Extension[] = [
   keymap.of([
     { key: 'ArrowDown', run: (v) => enterNeighborTable(v, 'down') },
     { key: 'ArrowUp', run: (v) => enterNeighborTable(v, 'up') },
+    // 列表行 Tab/Shift-Tab 升降层级（非列表行回落 CM 默认空格缩进）
+    { key: 'Tab', run: (v) => adjustListIndent(v, 1) },
+    { key: 'Shift-Tab', run: (v) => adjustListIndent(v, -1) },
+    // 查找替换（Typora：⌘F 查找；mac ⌥⌘F / Win Ctrl+H 进替换面板）
+    { key: 'Mod-f', run: openSearchPanelWithReplaceFocus(false) },
+    ...(IS_MAC
+      ? [{ key: 'Mod-Alt-f', run: openSearchPanelWithReplaceFocus(true) }]
+      : [{ key: 'Mod-h', run: openSearchPanelWithReplaceFocus(true) }]),
     // 跳到文档首/尾：Win Ctrl+Home/End（CM 默认键位已含）；mac ⌘↑/⌘↓
     { key: 'Mod-ArrowUp', run: cursorDocStart, shift: selectDocStart },
     { key: 'Mod-ArrowDown', run: cursorDocEnd, shift: selectDocEnd },

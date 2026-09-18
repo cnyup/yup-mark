@@ -3,7 +3,7 @@ import tseslint from 'typescript-eslint'
 import reactHooks from 'eslint-plugin-react-hooks'
 
 export default tseslint.config(
-  { ignores: ['out/**', 'dist/**', 'packages/tui/dist/**', 'node_modules/**', 'coverage/**', 'scripts/layout-harness/bundle.js', 'scripts/layout-harness/main.cjs', 'spikes/**'] },
+  { ignores: ['out/**', 'dist/**', 'packages/tui/dist/**', 'node_modules/**', 'coverage/**', 'scripts/layout-harness/bundle.js', 'scripts/layout-harness/main.cjs', 'spikes/**', 'src-tauri/target/**', 'src-tauri/gen/**', 'src-tauri/icons/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

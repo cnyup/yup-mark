@@ -135,3 +135,9 @@
 - **TR3 编辑链路**：外链 window.open 补丁 → Rust `open_external`（http/https 白名单）；关窗冲刷改 `onCloseRequested`（preventDefault → 冲刷 → destroy，WKWebView beforeunload 不可靠）；watcher/冲突弹窗/自动保存/会话逻辑本体未动（纯事件源替换）。
 - **验证（编译级）**：cargo check/clippy 0 警告/fmt/test 7 用例 ✓；typecheck×3 + lint + vitest 39 文件/306 用例 ✓；vite build ✓。**GUI 手验清单待用户本地执行**（见 ROADMAP TR 章节）。
 - **环境备忘**：远程磁盘曾满（清 go-build 缓存 8.4G 腾挪）；远程 Node 走 nvm v24.14（直接 `node` 可能命中系统 v18，命令统一 `source /root/.nvm/nvm.sh`）。
+
+## 14. KP0 完成（2026-09-18，桌面 P0 内核补课——惠及 Tauri 线）
+
+- **查找替换**：`@codemirror/search` 的 `search()` 进 baseExtensions（与 liveRender 装饰共存无冲突）；键位挂 tableAndFormatKeys——⌘F 查找、mac ⌥⌘F / Win Ctrl+H 打开面板并 best-effort 聚焦替换框（CM6 无官方 API，DOM 定位第二输入框）；面板 CSS 覆盖为 Typora 风（编辑区右上浮层、7 套主题走 CSS 变量；命中高亮主色/当前反色）。
+- **列表 Tab 升降层级**：`adjustListIndent(view, ±1)`（engine.ts）+ 纯函数 `adjustListIndentLines`/`renumberOrderedLines`（blockOps.ts）——列表行 Tab 加 2 空格、Shift-Tab 去 2 空格（0 缩进回落默认）；有序列表栈式重编号（同级连续 1..n、深缩进子项不打断父级、空行宽松保持）；非列表行返回 false 回落 CM 默认缩进；剔除文档末尾幻影空行。
+- **验证**：新增 15 用例（listIndent 12 + search 3：面板/命中进渲染态块/replaceAll 跨隐藏语法）→ 基线 **41 文件 / 321 用例**全绿；typecheck×3 + lint（补 src-tauri 构建产物 ignore）通过。
