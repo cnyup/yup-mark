@@ -6,6 +6,9 @@
 import { create } from 'zustand'
 import i18next from 'i18next'
 import { setMermaidTheme } from '@yupmark/live-cm/widgets'
+import { setEditorMenuLabels, type EditorMenuLabelKey } from '@yupmark/live-cm/contextMenu'
+import zhCN from '../../i18n/zh-CN'
+import enUS from '../../i18n/en-US'
 import { EDITOR_COMMANDS, effectiveBindings } from '@yupmark/live-cm/keybindings'
 import {
   persistSettings,
@@ -43,9 +46,16 @@ interface AppSettingsStore {
   closeSettingsPage(): void
 }
 
+/** 编辑器右键菜单文案（内核零 i18n，外壳按语言注入；表头列前缀一并换） */
+function applyEditorMenuLabels(locale: string): void {
+  const dict = (locale === 'zh-CN' ? zhCN : enUS).editorMenu as Record<EditorMenuLabelKey, string>
+  setEditorMenuLabels(dict, locale === 'zh-CN' ? '列' : 'Col ')
+}
+
 function applyAll(theme: string, locale: string): void {
   document.documentElement.dataset.theme = theme
   setMermaidTheme(theme === 'github-dark' || theme === 'dracula' ? 'dark' : 'default')
+  applyEditorMenuLabels(locale)
   // i18next 初始化期间不切语言（初始 lng 已按持久化设置传入）
   if (i18next.isInitialized) {
     void i18next.changeLanguage(locale)

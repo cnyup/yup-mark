@@ -2,6 +2,7 @@
  * 编辑器右键菜单（Typora 式布局：图标 + 文字 + 快捷键）：
  * 剪切/复制/粘贴/全选 + 段落/格式/插入 三组子菜单。
  * 剪贴板优先走主进程 IPC（file:// 下 navigator.clipboard 不可靠）。
+ * 文案：内核零 i18n 依赖，默认中文；外壳经 setEditorMenuLabels 注入本地化（切语言时更新）。
  */
 import type { EditorView } from '@codemirror/view'
 import { IS_MAC } from './platform'
@@ -14,6 +15,70 @@ import {
 
 /** 菜单快捷键提示：mac 显示符号、Windows/Linux 显示 Ctrl 组合（Typora 官方对照） */
 const H = (mac: string, win: string): string => (IS_MAC ? mac : win)
+
+// ---------------------------------------------------------------------------
+// 文案注册表（默认中文；外壳可整体或按 key 覆盖）
+// ---------------------------------------------------------------------------
+export type EditorMenuLabelKey =
+  | 'cut' | 'copy' | 'paste' | 'selectAll'
+  | 'paragraph' | 'format' | 'insert'
+  | 'body' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
+  | 'quote' | 'ol' | 'ul' | 'task'
+  | 'bold' | 'italic' | 'strike' | 'inlineCode' | 'clearFormat'
+  | 'table' | 'codeBlock' | 'formula' | 'mathBlock' | 'link' | 'image' | 'timestamp'
+  | 'tableTitle' | 'tableRows' | 'tableCols' | 'cancel' | 'ok'
+
+/** 表头列名（列1/Col 1）与正文标签分开：函数型，注入方闭包拼接 */
+let labels: Record<EditorMenuLabelKey, string> = {
+  cut: '剪切',
+  copy: '复制',
+  paste: '粘贴',
+  selectAll: '全选',
+  paragraph: '段落',
+  format: '格式',
+  insert: '插入',
+  body: '正文',
+  h1: '一级标题',
+  h2: '二级标题',
+  h3: '三级标题',
+  h4: '四级标题',
+  h5: '五级标题',
+  h6: '六级标题',
+  quote: '引用',
+  ol: '有序列表',
+  ul: '无序列表',
+  task: '任务列表',
+  bold: '加粗',
+  italic: '斜体',
+  strike: '删除线',
+  inlineCode: '行内代码',
+  clearFormat: '清除格式',
+  table: '表格…',
+  codeBlock: '代码块',
+  formula: '行内公式',
+  mathBlock: '块级公式',
+  link: '链接',
+  image: '图片',
+  timestamp: '时间戳',
+  tableTitle: '插入表格',
+  tableRows: '行数（含表头）',
+  tableCols: '列数',
+  cancel: '取消',
+  ok: '插入',
+}
+
+let columnPrefix = '列'
+
+/** 外壳注入文案（部分覆盖即可，未给的 key 保持现值）；colPrefix 用于表头「列N/Col N」 */
+export function setEditorMenuLabels(overrides: Partial<Record<EditorMenuLabelKey, string>>, colPrefix?: string): void {
+  labels = { ...labels, ...overrides }
+  if (colPrefix !== undefined) columnPrefix = colPrefix
+}
+
+/** 表头列名（tableMarkdown 用） */
+function columnName(i: number): string {
+  return `${columnPrefix}${i + 1}`
+}
 
 /** 菜单条目：普通项 / 分隔线 / 带子菜单的组 */
 interface MenuEntry {
@@ -182,7 +247,7 @@ function buildSubmenuItem(item: MenuEntry & { sub: MenuEntry[] }): HTMLElement {
 // ---------------------------------------------------------------------------
 /** 行 × 列的表格源码（行数含表头） */
 export function tableMarkdown(rows: number, cols: number): string {
-  const header = `| ${Array.from({ length: cols }, (_, i) => `列${i + 1}`).join(' | ')} |`
+  const header = `| ${Array.from({ length: cols }, (_, i) => columnName(i)).join(' | ')} |`
   const delim = `| ${Array.from({ length: cols }, () => '---').join(' | ')} |`
   const data = Array.from(
     { length: Math.max(0, rows - 1) },
@@ -199,7 +264,7 @@ function openInsertTableDialog(view: EditorView): void {
 
   const title = document.createElement('div')
   title.className = 'modal__title'
-  title.textContent = '插入表格'
+  title.textContent = labels.tableTitle
   modal.appendChild(title)
 
   const makeField = (labelText: string, value: number, min: number, max: number): HTMLInputElement => {
@@ -217,8 +282,8 @@ function openInsertTableDialog(view: EditorView): void {
     modal.appendChild(row)
     return input
   }
-  const rowsInput = makeField('行数（含表头）', 3, 2, 50)
-  const colsInput = makeField('列数', 4, 1, 20)
+  const rowsInput = makeField(labels.tableRows, 3, 2, 50)
+  const colsInput = makeField(labels.tableCols, 4, 1, 20)
 
   const close = (): void => overlay.remove()
 
@@ -227,12 +292,12 @@ function openInsertTableDialog(view: EditorView): void {
   const cancel = document.createElement('button')
   cancel.type = 'button'
   cancel.className = 'modal__btn'
-  cancel.textContent = '取消'
+  cancel.textContent = labels.cancel
   cancel.addEventListener('click', close)
   const ok = document.createElement('button')
   ok.type = 'button'
   ok.className = 'modal__btn modal__btn--primary'
-  ok.textContent = '插入'
+  ok.textContent = labels.ok
   ok.addEventListener('click', () => {
     const rows = Math.min(50, Math.max(2, Number(rowsInput.value) || 3))
     const cols = Math.min(20, Math.max(1, Number(colsInput.value) || 4))
@@ -271,41 +336,41 @@ export function openEditorContextMenu(view: EditorView, x: number, y: number): b
   const clip = clipboardBridge()
 
   const paragraphSub: MenuEntry[] = [
-    { icon: 'body', label: '正文', hint: H('⌘0', 'Ctrl+0'), run: () => applyBlockKindToSelection(view, 'paragraph') },
+    { icon: 'body', label: labels.body, hint: H('⌘0', 'Ctrl+0'), run: () => applyBlockKindToSelection(view, 'paragraph') },
     { sep: true },
-    { icon: 'heading', label: '一级标题', hint: H('⌘1', 'Ctrl+1'), run: () => applyBlockKindToSelection(view, 'h1') },
-    { icon: 'heading', label: '二级标题', hint: H('⌘2', 'Ctrl+2'), run: () => applyBlockKindToSelection(view, 'h2') },
-    { icon: 'heading', label: '三级标题', hint: H('⌘3', 'Ctrl+3'), run: () => applyBlockKindToSelection(view, 'h3') },
-    { icon: 'heading', label: '四级标题', hint: H('⌘4', 'Ctrl+4'), run: () => applyBlockKindToSelection(view, 'h4') },
-    { icon: 'heading', label: '五级标题', hint: H('⌘5', 'Ctrl+5'), run: () => applyBlockKindToSelection(view, 'h5') },
-    { icon: 'heading', label: '六级标题', hint: H('⌘6', 'Ctrl+6'), run: () => applyBlockKindToSelection(view, 'h6') },
+    { icon: 'heading', label: labels.h1, hint: H('⌘1', 'Ctrl+1'), run: () => applyBlockKindToSelection(view, 'h1') },
+    { icon: 'heading', label: labels.h2, hint: H('⌘2', 'Ctrl+2'), run: () => applyBlockKindToSelection(view, 'h2') },
+    { icon: 'heading', label: labels.h3, hint: H('⌘3', 'Ctrl+3'), run: () => applyBlockKindToSelection(view, 'h3') },
+    { icon: 'heading', label: labels.h4, hint: H('⌘4', 'Ctrl+4'), run: () => applyBlockKindToSelection(view, 'h4') },
+    { icon: 'heading', label: labels.h5, hint: H('⌘5', 'Ctrl+5'), run: () => applyBlockKindToSelection(view, 'h5') },
+    { icon: 'heading', label: labels.h6, hint: H('⌘6', 'Ctrl+6'), run: () => applyBlockKindToSelection(view, 'h6') },
     { sep: true },
-    { icon: 'quote', label: '引用', hint: H('⌘⌥Q', 'Ctrl+Shift+Q'), run: () => applyBlockKindToSelection(view, 'quote') },
-    { icon: 'ol', label: '有序列表', hint: H('⌘⌥O', 'Ctrl+Shift+['), run: () => applyBlockKindToSelection(view, 'ol') },
-    { icon: 'ul', label: '无序列表', hint: H('⌘⌥U', 'Ctrl+Shift+]'), run: () => applyBlockKindToSelection(view, 'ul') },
-    { icon: 'task', label: '任务列表', hint: H('⌘⌥X', 'Ctrl+Shift+X'), run: () => applyBlockKindToSelection(view, 'task') },
+    { icon: 'quote', label: labels.quote, hint: H('⌘⌥Q', 'Ctrl+Shift+Q'), run: () => applyBlockKindToSelection(view, 'quote') },
+    { icon: 'ol', label: labels.ol, hint: H('⌘⌥O', 'Ctrl+Shift+['), run: () => applyBlockKindToSelection(view, 'ol') },
+    { icon: 'ul', label: labels.ul, hint: H('⌘⌥U', 'Ctrl+Shift+]'), run: () => applyBlockKindToSelection(view, 'ul') },
+    { icon: 'task', label: labels.task, hint: H('⌘⌥X', 'Ctrl+Shift+X'), run: () => applyBlockKindToSelection(view, 'task') },
   ]
 
   const formatSub: MenuEntry[] = [
-    { icon: 'bold', label: '加粗', hint: H('⌘B', 'Ctrl+B'), run: () => wrapSelectionWith(view, '**', '**') },
-    { icon: 'italic', label: '斜体', hint: H('⌘I', 'Ctrl+I'), run: () => wrapSelectionWith(view, '*', '*') },
-    { icon: 'strike', label: '删除线', hint: H('⌃⇧`', 'Alt+Shift+5'), run: () => wrapSelectionWith(view, '~~', '~~') },
-    { icon: 'code', label: '行内代码', hint: H('⇧⌘`', 'Ctrl+Shift+`'), run: () => wrapSelectionWith(view, '`', '`') },
+    { icon: 'bold', label: labels.bold, hint: H('⌘B', 'Ctrl+B'), run: () => wrapSelectionWith(view, '**', '**') },
+    { icon: 'italic', label: labels.italic, hint: H('⌘I', 'Ctrl+I'), run: () => wrapSelectionWith(view, '*', '*') },
+    { icon: 'strike', label: labels.strike, hint: H('⌃⇧`', 'Alt+Shift+5'), run: () => wrapSelectionWith(view, '~~', '~~') },
+    { icon: 'code', label: labels.inlineCode, hint: H('⇧⌘`', 'Ctrl+Shift+`'), run: () => wrapSelectionWith(view, '`', '`') },
     { sep: true },
-    { icon: 'clear', label: '清除格式', hint: H('⌘\\', 'Ctrl+\\'), run: () => clearInlineFormat(view) },
+    { icon: 'clear', label: labels.clearFormat, hint: H('⌘\\', 'Ctrl+\\'), run: () => clearInlineFormat(view) },
   ]
 
   const insertSub: MenuEntry[] = [
-    { icon: 'table', label: '表格…', hint: H('⌘⌥T', 'Ctrl+T'), run: () => openInsertTableDialog(view) },
-    { icon: 'code', label: '代码块', hint: H('⌥⌘C', 'Ctrl+Shift+K'), run: () => insertBlockSnippet(view, '```\n\n```', 4) },
-    { icon: 'formula', label: '行内公式', run: () => wrapSelectionWith(view, '$', '$') },
-    { icon: 'math', label: '块级公式', hint: H('⌘⌥B', 'Ctrl+Shift+M'), run: () => insertBlockSnippet(view, '$$\n\n$$', 3) },
+    { icon: 'table', label: labels.table, hint: H('⌘⌥T', 'Ctrl+T'), run: () => openInsertTableDialog(view) },
+    { icon: 'code', label: labels.codeBlock, hint: H('⌥⌘C', 'Ctrl+Shift+K'), run: () => insertBlockSnippet(view, '```\n\n```', 4) },
+    { icon: 'formula', label: labels.formula, run: () => wrapSelectionWith(view, '$', '$') },
+    { icon: 'math', label: labels.mathBlock, hint: H('⌘⌥B', 'Ctrl+Shift+M'), run: () => insertBlockSnippet(view, '$$\n\n$$', 3) },
     { sep: true },
-    { icon: 'link', label: '链接', hint: H('⌘K', 'Ctrl+K'), run: () => wrapSelectionWith(view, '[', '](https://)') },
-    { icon: 'image', label: '图片', hint: H('⌃⌘I', 'Ctrl+Shift+I'), run: () => wrapSelectionWith(view, '![', '](https://)') },
+    { icon: 'link', label: labels.link, hint: H('⌘K', 'Ctrl+K'), run: () => wrapSelectionWith(view, '[', '](https://)') },
+    { icon: 'image', label: labels.image, hint: H('⌃⌘I', 'Ctrl+Shift+I'), run: () => wrapSelectionWith(view, '![', '](https://)') },
     {
       icon: 'clock',
-      label: '时间戳',
+      label: labels.timestamp,
       run: () => {
         const d = new Date()
         const p = (n: number): string => String(n).padStart(2, '0')
@@ -317,7 +382,7 @@ export function openEditorContextMenu(view: EditorView, x: number, y: number): b
   const entries: MenuEntry[] = [
     {
       icon: 'cut',
-      label: '剪切',
+      label: labels.cut,
       hint: H('⌘X', 'Ctrl+X'),
       disabled: !hasSel,
       run: () => {
@@ -328,7 +393,7 @@ export function openEditorContextMenu(view: EditorView, x: number, y: number): b
     },
     {
       icon: 'copy',
-      label: '复制',
+      label: labels.copy,
       hint: H('⌘C', 'Ctrl+C'),
       disabled: !hasSel,
       run: () => {
@@ -337,7 +402,7 @@ export function openEditorContextMenu(view: EditorView, x: number, y: number): b
     },
     {
       icon: 'paste',
-      label: '粘贴',
+      label: labels.paste,
       hint: H('⌘V', 'Ctrl+V'),
       run: () => {
         void clip.read().then((text) => {
@@ -352,7 +417,7 @@ export function openEditorContextMenu(view: EditorView, x: number, y: number): b
     },
     {
       icon: 'selectAll',
-      label: '全选',
+      label: labels.selectAll,
       hint: H('⌘A', 'Ctrl+A'),
       run: () => {
         view.dispatch({ selection: { anchor: 0, head: view.state.doc.length } })
@@ -360,9 +425,9 @@ export function openEditorContextMenu(view: EditorView, x: number, y: number): b
       },
     },
     { sep: true },
-    { icon: 'paragraph', label: '段落', sub: paragraphSub },
-    { icon: 'format', label: '格式', sub: formatSub },
-    { icon: 'insert', label: '插入', sub: insertSub },
+    { icon: 'paragraph', label: labels.paragraph, sub: paragraphSub },
+    { icon: 'format', label: labels.format, sub: formatSub },
+    { icon: 'insert', label: labels.insert, sub: insertSub },
   ]
 
   overlayEl = document.createElement('div')
