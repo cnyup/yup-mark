@@ -468,7 +468,9 @@ pub fn install_event_handler(app: &AppHandle) {
                     let _ = w.eval("location.reload()");
                 }
             }
-            "view:devtools" if cfg!(debug_assertions) => {
+            // devtools 仅 debug 编译存在（release 无此方法）
+            #[cfg(debug_assertions)]
+            "view:devtools" => {
                 if let Some(w) = main_window(app) {
                     w.open_devtools();
                 }

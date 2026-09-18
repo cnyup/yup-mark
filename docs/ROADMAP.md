@@ -17,7 +17,7 @@ Electron → Tauri 2 原位替换；renderer/kernel/TUI 不动。已确认：Rad
 | TR3 | 外链 open_external + onCloseRequested 冲刷 + 事件源替换 | ✅ 编译级 2026-09-18 |
 | KP0 | ⌘F/⌥⌘F 查找替换 + 列表 Tab 升降层级（内核补课，原桌面 P0） | ✅ 2026-09-18（321 用例） |
 | TR4 | Radix 无头组件接入 + 7 主题三平台回归 | ✅ 代码级 2026-09-18（三平台目测回归待用户手验） |
-| TR5 | 三平台打包 + desktop CI/Release workflow（四端分发收官） | ⬜ |
+| TR5 | 三平台打包 + desktop CI/Release workflow（四端分发收官） | ✅ 2026-09-18（deb 4.7MB 实测；AppImage/dmg/nsis 待 CI） |
 | TR6 | 删 Electron 全套 + 文档更新 | ⬜ |
 
 **用户 GUI 手验清单（本地 Mac：`rustup` 一次 → `npm run tauri dev`）**：窗口尺寸/中文输入/打开-保存-另存/文件树增删改名/最近目录/菜单双语切换/加速键全表/⌘点击外链/外部修改→静默重载与冲突弹窗/关窗冲刷/主题 7 套/会话恢复。

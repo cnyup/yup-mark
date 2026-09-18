@@ -149,3 +149,11 @@
 - **Tooltip**（`ui/Tip.tsx`）：Sidebar/StatusBar 13 处 data-tip 纯 CSS 提示 → Radix Tooltip（350ms 延迟、键盘聚焦可达）；`[data-tip]` CSS 块删除，`.tip` 沿用原视觉。
 - **验证**：新增 modals.test 4 用例（portal/role=dialog/初始焦点/Enter/Esc/文件与目录菜单项集）；**42 文件 / 325 用例**全绿；typecheck×3 + lint + vite build 通过。Radix onSelect 激活链路 jsdom 不可达 → GUI 手验。
 - **待用户手验**：7 套主题 × 弹窗/右键菜单/提示的视觉回归（三平台 WebView）。
+
+## 16. TR5 完成（2026-09-18，打包分发——四端收官）
+
+- **本地/远程构建验证**：`npx tauri build` Linux 全链路通过——release 编译 2m30s、产物 **YupMark_0.3.0_amd64.deb = 4.7MB**（Electron 版为百 MB 级）。AppImage 需从 GitHub 下载 AppRun（远程网络 TLS 中断），交 CI 验证。mac devtools 修复：`open_devtools` 仅 debug 编译（release 下方法不存在），match 分支加 `#[cfg(debug_assertions)]`。
+- **CI**：`.github/workflows/desktop.yml`（push/PR paths 过滤：lint/typecheck/test + cargo fmt/clippy/test + Linux 全量构建含 AppImage）；`.github/workflows/desktop-release.yml`（tag `v*`：mac universal-dmg / win nsis-x64 / linux AppImage+deb 三矩阵 → softprops draft Release）。**旧 electron `release.yml` 删除**（同为 `v*` 触发会冲突；electron 发布通道随迁移退役）。
+- **版本**：package.json 对齐 0.3.0（= tauri.conf.json）；tag 方案不变 `v*`（桌面）/`tui-v*`（TUI）。
+- **README**：下载段更新（mac universal / win nsis / linux AppImage+deb；v0.3.0 起 Tauri）；特性路线补查找替换、列表层级、Tauri+TUI 四端。
+- **待办**：TR6（删 Electron）等用户 GUI 验收后执行。
