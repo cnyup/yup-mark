@@ -275,6 +275,19 @@ export function Sidebar() {
                   ) : (
                     <div className="sidebar-popover__empty">{t('sidebar.noRecentDirs')}</div>
                   )}
+
+                  <div className="sidebar-popover__sep" />
+                  <button
+                    type="button"
+                    className="sidebar-popover__row"
+                    onClick={() => {
+                      setOpsOpen(false)
+                      useAppSettings.getState().openSettingsPage()
+                    }}
+                  >
+                    <IconSettings size={14} />
+                    {t('settings.title')}
+                  </button>
                 </div>
               </>
             ) : null}
@@ -303,16 +316,6 @@ export function Sidebar() {
             </button>
           </Tip>
 
-          <Tip text={t('settings.title')}>
-            <button
-              type="button"
-              className="sidebar__icon-btn"
-              aria-label={t('settings.title')}
-              onClick={() => useAppSettings.getState().openSettingsPage()}
-            >
-              <IconSettings />
-            </button>
-          </Tip>
 
           <Tip text={t('sidebar.toggle')}>
             <button
