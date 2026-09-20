@@ -151,8 +151,9 @@ export class MathWidget extends WidgetType {
     return span
   }
 
+  /** false：点击事件放行给编辑器 → engine 的 mousedown 代管光标置入 → 原地显源码（Typora 行为） */
   ignoreEvent(): boolean {
-    return true
+    return false
   }
 }
 
@@ -177,8 +178,9 @@ export class MermaidWidget extends WidgetType {
     return wrap
   }
 
+  /** false：同 MathWidget，点击放行给编辑器代管 → 原地显源码编辑 */
   ignoreEvent(): boolean {
-    return true
+    return false
   }
 }
 
@@ -192,9 +194,18 @@ let currentMermaidTheme: MermaidThemeName = 'default'
 export function setMermaidTheme(theme: MermaidThemeName): void {
   currentMermaidTheme = theme
   mermaidReady = false // 触发下次渲染时重新 initialize
+  mermaidSvgCache.clear() // 缓存带主题配色，切主题必须作废
 }
 
+/** 渲染结果缓存（code → svg）：分栏 Widget 随文档变化重建时即时复用，避免闪抽帧 */
+const mermaidSvgCache = new Map<string, string>()
+
 async function renderMermaid(el: HTMLElement, code: string): Promise<void> {
+  const cached = mermaidSvgCache.get(code)
+  if (cached !== undefined) {
+    el.innerHTML = cached
+    return
+  }
   try {
     const { default: mermaid } = await import('mermaid')
     if (!mermaidReady) {
@@ -202,12 +213,180 @@ async function renderMermaid(el: HTMLElement, code: string): Promise<void> {
       mermaidReady = true
     }
     const { svg } = await mermaid.render(`yup-mermaid-${mermaidSeq++}`, code)
+    if (mermaidSvgCache.size > 50) mermaidSvgCache.clear()
+    mermaidSvgCache.set(code, svg)
     el.innerHTML = svg
   } catch (err) {
     el.classList.add('cm-mermaid-wrap--error')
     el.textContent = `Mermaid render failed / 图表渲染失败:\n${
       err instanceof Error ? err.message : String(err)
     }`
+  }
+}
+
+/**
+ * 分栏块级编辑（飞书云文档式）：左侧可视化预览 + 右侧源码编辑，失焦同步回文档。
+ * 打字期间只更新左栏预览（纯 DOM），不派发事务 → 光标/IME 不被打断；
+ * 失焦一次性 replace 回文档（TableWidget 单元格同款模式）。
+ * from/to 纳入 eq：文档任何变化都会以新位置重建实例，同步用的区间永远新鲜。
+ */
+
+/** 分栏/纯预览切换状态（按块源码内容记忆，Widget 重建后保留） */
+const compactSplits = new Set<string>()
+
+/** 在分栏容器右上角挂「预览/分栏」切换按钮：紧凑态隐藏源码窗格只留渲染结果 */
+function attachSplitToggle(wrap: HTMLElement, key: string): void {
+  const compact = (): boolean => compactSplits.has(key)
+  if (compact()) wrap.classList.add('cm-split--compact')
+  const btn = document.createElement('button')
+  btn.type = 'button'
+  btn.className = 'cm-split__toggle'
+  btn.title = '切换 预览/分栏 · Toggle source pane'
+  btn.textContent = compact() ? '分栏' : '预览'
+  btn.addEventListener('mousedown', (e) => e.preventDefault())
+  btn.addEventListener('click', () => {
+    const next = wrap.classList.toggle('cm-split--compact')
+    if (next) compactSplits.add(key)
+    else compactSplits.delete(key)
+    btn.textContent = next ? '分栏' : '预览'
+  })
+  wrap.appendChild(btn)
+}
+
+export class MathSplitWidget extends WidgetType {
+  constructor(
+    readonly tex: string,
+    readonly from: number,
+    readonly to: number,
+  ) {
+    super()
+  }
+
+  eq(other: MathSplitWidget): boolean {
+    return other.tex === this.tex && other.from === this.from && other.to === this.to
+  }
+
+  get estimatedHeight(): number {
+    return 96
+  }
+
+  toDOM(): HTMLElement {
+    const wrap = document.createElement('div')
+    wrap.className = 'cm-split cm-split--math'
+    const viewEl = document.createElement('div')
+    viewEl.className = 'cm-split__view'
+    const src = document.createElement('pre')
+    src.className = 'cm-split__src'
+    src.contentEditable = 'plaintext-only' as HTMLElement['contentEditable']
+    src.spellcheck = false
+    src.textContent = this.tex
+    wrap.append(viewEl, src)
+
+    const renderView = (): void => {
+      try {
+        katex.render(src.textContent ?? '', viewEl, { displayMode: true, throwOnError: false })
+      } catch {
+        viewEl.textContent = src.textContent ?? ''
+      }
+    }
+    renderView()
+
+    const view = (): EditorView | null => EditorView.findFromDOM(wrap)
+    const sync = (): void => {
+      const v = view()
+      const text = src.textContent ?? ''
+      if (!v || text === this.tex) return
+      v.dispatch({ changes: { from: this.from, to: this.to, insert: `$$\n${text}\n$$` } })
+    }
+
+    src.addEventListener('input', renderView)
+    // 延迟派发：与表格单元格一致，避免重建 DOM 抢走焦点
+    src.addEventListener('blur', () => setTimeout(sync, 0))
+    src.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' || e.key === 'Tab') {
+        e.preventDefault()
+        src.blur()
+        const v = view()
+        if (v) {
+          v.dispatch({ selection: { anchor: this.to } })
+          v.focus()
+        }
+      }
+    })
+    attachSplitToggle(wrap, `m:${this.tex}`)
+    return wrap
+  }
+
+  /** ignoreEvent=true：编辑发生在窗格内 contenteditable，编辑器不接管其事件 */
+  ignoreEvent(): boolean {
+    return true
+  }
+}
+
+/** mermaid 分栏：左图表预览（防抖重渲染，带缓存）/ 右源码编辑，交互同 MathSplitWidget */
+export class MermaidSplitWidget extends WidgetType {
+  constructor(
+    readonly code: string,
+    readonly from: number,
+    readonly to: number,
+  ) {
+    super()
+  }
+
+  eq(other: MermaidSplitWidget): boolean {
+    return other.code === this.code && other.from === this.from && other.to === this.to
+  }
+
+  get estimatedHeight(): number {
+    return this.code.split('\n').length * 24 + 80
+  }
+
+  toDOM(): HTMLElement {
+    const wrap = document.createElement('div')
+    wrap.className = 'cm-split cm-split--mermaid'
+    const viewEl = document.createElement('div')
+    viewEl.className = 'cm-split__view cm-split__view--mermaid'
+    const src = document.createElement('pre')
+    src.className = 'cm-split__src'
+    src.contentEditable = 'plaintext-only' as HTMLElement['contentEditable']
+    src.spellcheck = false
+    src.textContent = this.code
+    wrap.append(viewEl, src)
+
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const renderView = (): void => {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => void renderMermaid(viewEl, src.textContent ?? ''), 350)
+    }
+    void renderMermaid(viewEl, this.code)
+
+    const view = (): EditorView | null => EditorView.findFromDOM(wrap)
+    const sync = (): void => {
+      const v = view()
+      const text = src.textContent ?? ''
+      if (!v || text === this.code) return
+      v.dispatch({ changes: { from: this.from, to: this.to, insert: `\`\`\`mermaid\n${text}\n\`\`\`` } })
+    }
+
+    src.addEventListener('input', renderView)
+    src.addEventListener('blur', () => setTimeout(sync, 0))
+    src.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' || (e.key === 'Tab' && !e.shiftKey)) {
+        e.preventDefault()
+        src.blur()
+        const v = view()
+        if (v) {
+          v.dispatch({ selection: { anchor: this.to } })
+          v.focus()
+        }
+      }
+    })
+    attachSplitToggle(wrap, `mer:${this.code}`)
+    return wrap
+  }
+
+  ignoreEvent(): boolean {
+    return true
   }
 }
 

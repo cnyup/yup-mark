@@ -26,9 +26,11 @@ describe('查找替换（CM6 search 与实时渲染共存）', () => {
     expect(findNext(view)).toBe(true)
     const sel = view.state.selection.main
     expect(doc.slice(sel.from, sel.to)).toBe('hello')
-    // 与实时渲染共存：命中所在的渲染块，粗体语法仍是淡显装饰（未被 search 破坏）
+    // 与实时渲染共存：命中所在的渲染块保持渲染态——粗体样式生效、
+    // `**` 标记不因选区落入而淡显/显源（统一渲染策略）
     const hitLine = host.querySelectorAll('.cm-line')[2] as HTMLElement
-    expect(hitLine.querySelector('.cm-mark-dim')).not.toBeNull()
+    expect(hitLine.querySelector('.cm-strong')).not.toBeNull()
+    expect(hitLine.querySelector('.cm-mark-dim')).toBeNull()
     view.destroy()
     host.remove()
   })

@@ -72,7 +72,8 @@ interface WorkspaceStore {
   saveActiveAs(): Promise<void>
 
   openWorkspace(): Promise<void>
-  restoreWorkspace(root: string): Promise<void>
+  /** expandRoot=false 时根目录保持折叠（打开单个文件的采纳场景，不打扰） */
+  restoreWorkspace(root: string, opts?: { expandRoot?: boolean }): Promise<void>
   refreshTree(): Promise<void>
   toggleDir(path: string): void
   toggleSidebar(): void
@@ -262,7 +263,8 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
       const tab = makeTab(path, content)
       set((s) => ({ tabs: [...s.tabs, tab] }))
       if (opts?.activate !== false) get().activateTab(tab.id)
-      // 工作区外的文件也监听其目录，感知外部修改
+      // 单文件模式：不采纳所在目录为工作区（侧栏只列已打开文档）；
+      // 仅监听其目录感知外部修改
       if (path && !path.startsWith(get().workspaceRoot ?? '\0')) {
         void window.yupmark.watchDir(dirname(path), false)
       }
@@ -389,6 +391,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
         })
         set({ saving: false })
         syncDocDir()
+        // 单文件模式：另存不采纳目录，仅监听感知外部修改
         void window.yupmark.watchDir(dirname(res.data.path), false)
         scheduleSessionPersist()
       } else if (res.error !== 'canceled') {
@@ -403,8 +406,12 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
       if (res.ok && res.data) await get().restoreWorkspace(res.data)
     },
 
-    restoreWorkspace: async (root) => {
-      set({ workspaceRoot: root, expandedDirs: { [root]: true }, treeLoading: true })
+    restoreWorkspace: async (root, opts) => {
+      set({
+        workspaceRoot: root,
+        expandedDirs: opts?.expandRoot === false ? {} : { [root]: true },
+        treeLoading: true,
+      })
       await window.yupmark.watchDir(root, true)
       await get().refreshTree()
       scheduleSessionPersist()
@@ -509,7 +516,13 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
       if (session.sidebarPanel) set({ sidebarPanel: session.sidebarPanel })
       if (session.fileView === 'tree' || session.fileView === 'list') set({ fileView: session.fileView })
       if (SORT_MODES.includes(session.fileSort as FileSortMode)) set({ fileSort: session.fileSort as FileSortMode })
-      if (session.workspaceRoot) await get().restoreWorkspace(session.workspaceRoot)
+      if (session.workspaceRoot) await get().restoreWorkspace(session.workspaceRoot, { expandRoot: false })
+      // 展开状态恢复（旧 session 无此字段 → 保持折叠，避免重启后整目录铺开）
+      if (Array.isArray(session.expandedDirs)) {
+        const dirs: Record<string, boolean> = {}
+        for (const d of session.expandedDirs) if (typeof d === 'string') dirs[d] = true
+        set({ expandedDirs: dirs })
+      }
       const opened: string[] = []
       for (const t of session.tabs ?? []) {
         if (t.path) {
@@ -531,7 +544,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
     },
 
     persistSessionNow: () => {
-      const { tabs, activeId, workspaceRoot, sidebarOpen, sidebarPanel, fileView, fileSort } = get()
+      const { tabs, activeId, workspaceRoot, sidebarOpen, sidebarPanel, fileView, fileSort, expandedDirs } = get()
       const activeTab = tabs.find((t) => t.id === activeId)
       const state: SessionState = {
         workspaceRoot,
@@ -539,6 +552,9 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => {
         sidebarPanel,
         fileView,
         fileSort,
+        expandedDirs: Object.entries(expandedDirs)
+          .filter(([, v]) => v)
+          .map(([k]) => k),
         tabs: tabs.map((t) => ({ path: t.path, content: t.dirty ? t.content : undefined })),
         activePath: activeTab?.path ?? null,
       }

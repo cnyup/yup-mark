@@ -20,11 +20,11 @@
 
 > 桌面端自 v0.3.0 起基于 Tauri 构建（此前为 Electron 版）；安装包未做签名公证，macOS 首次打开请右键点击应用选择「打开」。
 
-**当前状态：桌面 Tauri 线收官（v0.3.0）** —— Typora 式渲染态编辑（标记就近淡显）+ 文件管理 + 扩展语法（公式/图表/表格）+ 查找替换（⌘F / ⌥⌘F）+ 列表 Tab 升降层级 + 视图三件套（源码 ⌘/ · 专注 F8 · 打字机 F9）+ 主题系统（内置多套、亮暗跟随系统、CSS 变量架构）、设置页（⌘,）、菜单与界面中英双语、快捷键与 Typora 官方双平台对齐。
+**当前状态：桌面 Tauri 线收官（v0.3.0）** —— Typora 式渲染态编辑（标记默认隐藏，⌘/ 或 IME 输入时显源码；公式/表格/图表块光标进入即显源码可编辑）+ 文件管理 + 扩展语法（公式/图表/表格）+ 查找替换（⌘F / ⌥⌘F）+ 列表 Tab 升降层级 + 视图三件套（源码 ⌘/ · 专注 F8 · 打字机 F9）+ 主题系统（内置多套、亮暗跟随系统、CSS 变量架构）、设置页（⌘,）、菜单与界面中英双语、快捷键与 Typora 官方双平台对齐。
 
 ### 特性路线
 
-- [x] Typora 式渲染态编辑：所有块保持渲染，语法标记光标就近淡显 —— CodeMirror 6 + lezer-markdown 自研引擎
+- [x] Typora 式渲染态编辑：所有块保持渲染，语法标记默认隐藏（⌘/ 源码模式或 IME 输入临时显源码）—— CodeMirror 6 + lezer-markdown 自研引擎
 - [x] 文件树工作区 / 多标签 / 大纲 / 最近文件 / 会话恢复
 - [x] KaTeX 数学公式、Mermaid 图表（懒加载）、Typora 网格表格（含行列工具栏与单元格编辑）、智能粘贴 URL
 - [x] 查找替换（⌘F 查找 / ⌥⌘F 或 Ctrl+H 替换）；列表项 Tab / Shift+Tab 升降层级（有序列表自动重编号）
@@ -94,7 +94,7 @@ Grab the latest build from [Releases](https://github.com/cnyup/yup-mark/releases
 
 > Desktop builds are Tauri-based since v0.3.0 (previously Electron); macOS builds are unsigned — right-click the app and choose "Open" on first launch.
 
-**Current status: Tauri desktop line shipped (v0.3.0)** — Typora-style live rendering (in-place marker reveal), file management, math/mermaid/tables, find & replace (⌘F / ⌥⌘F), list indent/dedent with Tab, view modes (source ⌘/ · focus F8 · typewriter F9), theme system, bilingual UI, Typora-aligned shortcuts.
+**Current status: Tauri desktop line shipped (v0.3.0)** — Typora-style live rendering (markers hidden by default; ⌘/ or IME input reveals source; math/table/diagram blocks reveal on cursor entry for editing), file management, math/mermaid/tables, find & replace (⌘F / ⌥⌘F), list indent/dedent with Tab, view modes (source ⌘/ · focus F8 · typewriter F9), theme system, bilingual UI, Typora-aligned shortcuts.
 
 Developer handoff docs: [CONVENTIONS](docs/CONVENTIONS.md) · [PROGRESS](docs/PROGRESS.md) · [ROADMAP](docs/ROADMAP.md). See [docs/DESIGN.md](docs/DESIGN.md) for the full design document.
 
@@ -112,7 +112,7 @@ yupmark .                      # directory mode (file tree + tabs)
 npx yupmark-tui notes.md
 ```
 
-- **Typora-style live editing**: the block under the cursor shows source; everything else stays rendered (same engine & semantics as the desktop app)
+- **Typora-style live editing**: markers stay hidden while you write (⌘/ or IME input reveals source); math/table/diagram blocks show source when the cursor enters (same engine & semantics as the desktop app)
 - **Extended syntax**: editable table grids, math via Unicode approximation, **mermaid flowcharts & sequence diagrams as ASCII art**, code highlighting
 - **CJK-safe**: column tracking, soft wrap and table grids never misalign on wide characters
 - **Themes & bilingual UI**: 7 palettes (same as desktop) + English/Chinese (`Alt+,` for settings)

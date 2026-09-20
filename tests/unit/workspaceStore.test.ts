@@ -40,6 +40,9 @@ beforeEach(() => {
     unwatchDir: vi.fn().mockResolvedValue({ ok: true, data: null }),
     saveFile: vi.fn().mockResolvedValue({ ok: true, data: null }),
     readFile: vi.fn(),
+    readTree: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+    saveFileDialog: vi.fn(),
+    loadSession: vi.fn().mockResolvedValue(null),
     saveSession: vi.fn().mockResolvedValue({ ok: true, data: null }),
   } as unknown as typeof window.yupmark
 })
@@ -106,6 +109,80 @@ describe('workspaceStore 多标签逻辑', () => {
     expect(s2.tabs.find((t) => t.path === '/a/two.md')).toBeUndefined()
     expect(s2.activeId).toBe(s2.tabs[1]?.id)
     view.destroy()
+  })
+
+  it('openDoc 单文件模式：不采纳所在目录，仅监听感知外部修改', async () => {
+    const view = freshView()
+    useWorkspaceStore.getState().attachView(view)
+
+    useWorkspaceStore.getState().openDoc('/a/one.md', 'one')
+    const s = useWorkspaceStore.getState()
+    expect(s.workspaceRoot).toBeNull()
+    expect(s.tabs.find((t) => t.path === '/a/one.md')).toBeTruthy()
+    expect(window.yupmark.watchDir).toHaveBeenCalledWith('/a', false)
+    expect(window.yupmark.readTree).not.toHaveBeenCalled()
+    view.destroy()
+  })
+
+  it('openDoc 已有工作区时不重复监听区内文件', async () => {
+    const view = freshView()
+    useWorkspaceStore.getState().attachView(view)
+    useWorkspaceStore.setState({ workspaceRoot: '/w' })
+
+    useWorkspaceStore.getState().openDoc('/w/one.md', 'one')
+    expect(useWorkspaceStore.getState().workspaceRoot).toBe('/w')
+    expect(window.yupmark.watchDir).not.toHaveBeenCalled()
+    expect(window.yupmark.readTree).not.toHaveBeenCalled()
+    view.destroy()
+  })
+
+  it('saveActiveAs 未命名文档另存：不采纳目录，仅监听所在目录', async () => {
+    const view = freshView()
+    useWorkspaceStore.getState().attachView(view)
+    ;(window.yupmark.saveFileDialog as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      data: { path: '/x/note.md' },
+    })
+
+    await useWorkspaceStore.getState().saveActiveAs()
+    const s = useWorkspaceStore.getState()
+    expect(s.workspaceRoot).toBeNull()
+    expect(s.tabs[0]?.path).toBe('/x/note.md')
+    expect(window.yupmark.watchDir).toHaveBeenCalledWith('/x', false)
+    view.destroy()
+  })
+
+  it('会话持久化 expandedDirs；恢复时旧格式折叠、新格式还原展开', async () => {
+    useWorkspaceStore.setState({ workspaceRoot: '/w', expandedDirs: { '/w/sub': true } })
+    useWorkspaceStore.getState().persistSessionNow()
+    const saved = (window.yupmark.saveSession as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]
+    expect(saved?.expandedDirs).toEqual(['/w/sub'])
+
+    // 旧 session（无 expandedDirs 字段）→ 恢复后保持折叠，不铺开整个目录
+    ;(window.yupmark.loadSession as ReturnType<typeof vi.fn>).mockResolvedValue({
+      workspaceRoot: '/w',
+      sidebarOpen: true,
+      sidebarPanel: 'files',
+      tabs: [],
+      activePath: null,
+    })
+    resetStore()
+    await useWorkspaceStore.getState().restoreSession()
+    expect(useWorkspaceStore.getState().workspaceRoot).toBe('/w')
+    expect(useWorkspaceStore.getState().expandedDirs).toEqual({})
+
+    // 新 session → 还原展开状态
+    ;(window.yupmark.loadSession as ReturnType<typeof vi.fn>).mockResolvedValue({
+      workspaceRoot: '/w',
+      sidebarOpen: true,
+      sidebarPanel: 'files',
+      expandedDirs: ['/w/sub'],
+      tabs: [],
+      activePath: null,
+    })
+    resetStore()
+    await useWorkspaceStore.getState().restoreSession()
+    expect(useWorkspaceStore.getState().expandedDirs).toEqual({ '/w/sub': true })
   })
 
   it('外部修改：无未保存改动时静默重载', async () => {

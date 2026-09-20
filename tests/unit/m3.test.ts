@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { syntaxTree } from '@codemirror/language'
+import { RangeSet } from '@codemirror/state'
 import { createEditorState } from '@yupmark/live-cm/extensions'
 import { buildLiveDecorations } from '@yupmark/live-cm/rules'
-import { MathWidget, MermaidWidget, TableWidget } from '@yupmark/live-cm/widgets'
+import { revealAnchorAt } from '@yupmark/live-cm/engine'
+import { MathSplitWidget, MathWidget, MermaidSplitWidget, MermaidWidget, TableWidget } from '@yupmark/live-cm/widgets'
 import { parseMarkdownTable } from '@yupmark/live-cm/table'
 import { smartPasteUrl } from '@yupmark/live-cm/smartPaste'
 import type { Range } from '@codemirror/state'
@@ -140,5 +142,58 @@ describe('smartPasteUrl 智能粘贴', () => {
 
   it('无选区不处理', () => {
     expect(smartPasteUrl('', 'https://example.com')).toBeNull()
+  })
+})
+
+describe('点击渲染结果进入编辑（revealAnchorAt）', () => {
+  it('行内公式：pos 落在替换区间或边界 → 返回严格内部的锚点', () => {
+    const doc = 'math $x_1$ here\n\nEND'
+    // 光标在文档末尾：行内公式保持 Widget 渲染，区间 [5,10)
+    const decos = RangeSet.of(buildLiveDecorations(createEditorState(doc, doc.length)))
+    expect(revealAnchorAt(decos, 7)).toBe(7) // 区间内 → 原位
+    expect(revealAnchorAt(decos, 5)).toBe(6) // 左边界 → 内收一格
+    expect(revealAnchorAt(decos, 10)).toBe(9) // 右边界 → 内收一格
+  })
+
+  it('非公式/图表区间返回 null；表格替换区间不代管（有自己的单元格编辑）', () => {
+    const plain = RangeSet.of(buildLiveDecorations(createEditorState('plain text', 3)))
+    expect(revealAnchorAt(plain, 3)).toBeNull()
+
+    const doc = '| a | b |\n| --- | --- |\n| 1 | 2 |\n'
+    const decos = RangeSet.of(buildLiveDecorations(createEditorState(doc, doc.length)))
+    const table = widgetsOf(buildLiveDecorations(createEditorState(doc, doc.length)), TableWidget)
+    expect(table).toHaveLength(1) // 表格整块替换为 TableWidget
+    const t = decos.iter()
+    let tableRange: { from: number; to: number } | null = null
+    while (t.value) {
+      if (t.value.spec.widget instanceof TableWidget) tableRange = { from: t.from, to: t.to }
+      t.next()
+    }
+    expect(tableRange).not.toBeNull()
+    // pos 落在表格替换区间内：revealAnchorAt 不接管（表格点击走单元格编辑）
+    const mid = Math.floor(((tableRange?.from ?? 0) + (tableRange?.to ?? 0)) / 2)
+    expect(revealAnchorAt(decos, mid)).toBeNull()
+  })
+})
+
+describe('分栏块级编辑（splitBlocks 选项，桌面专用）', () => {
+  it('块级数学始终产出 MathSplitWidget（携带源码与区间）', () => {
+    const doc = '$$\nE=mc^2\n$$\n\nEND'
+    const decos = buildLiveDecorations(createEditorState(doc, doc.length), [], undefined, { splitBlocks: true })
+    const splits = decos.filter((d) => d.value.spec.widget instanceof MathSplitWidget)
+    expect(splits).toHaveLength(1)
+    const w = splits[0]!.value.spec.widget as MathSplitWidget
+    expect(w.tex).toBe('E=mc^2')
+    expect(w.from).toBe(0)
+  })
+
+  it('mermaid 始终产出 MermaidSplitWidget；缺省路径保持传统 Widget（TUI 语义不变）', () => {
+    const doc = '```mermaid\ngraph TD\nA-->B\n```\n\nEND'
+    const split = buildLiveDecorations(createEditorState(doc, doc.length), [], undefined, { splitBlocks: true })
+    expect(split.filter((d) => d.value.spec.widget instanceof MermaidSplitWidget)).toHaveLength(1)
+
+    const legacy = buildLiveDecorations(createEditorState(doc, doc.length))
+    expect(legacy.filter((d) => d.value.spec.widget instanceof MermaidWidget)).toHaveLength(1)
+    expect(legacy.filter((d) => d.value.spec.widget instanceof MermaidSplitWidget)).toHaveLength(0)
   })
 })

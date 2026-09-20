@@ -42,6 +42,8 @@ export interface SessionState {
   fileView?: 'tree' | 'list'
   /** 文件排序模式 */
   fileSort?: FileSortMode
+  /** 展开的目录（工作区文件树跨重启保留展开状态） */
+  expandedDirs?: string[]
   /** 打开的标签；dirty 的未命名文档带内容以便恢复 */
   tabs: { path: string | null; content?: string }[]
   activePath: string | null

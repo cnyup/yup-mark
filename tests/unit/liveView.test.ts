@@ -33,7 +33,7 @@ describe('live render view 集成', () => {
     host.remove()
   })
 
-  it('光标进入块后隐藏解除（选择变化驱动重建）', () => {
+  it('光标进入块后标记保持隐藏（选择变化驱动重建）', () => {
     const host = document.createElement('div')
     document.body.appendChild(host)
 
@@ -50,9 +50,10 @@ describe('live render view 集成', () => {
     // 渲染态：# 被替换移除，不在渲染文本中
     expect(host.textContent).not.toContain('#')
 
-    view.dispatch({ selection: { anchor: 1 } }) // 光标进入标题 → 源码态
-    expect(host.textContent).toContain('#')
-    expect(host.querySelector('.cm-h1')).toBeTruthy() // 块样式保留
+    // 光标进入标题块：统一渲染策略下 # 仍隐藏，块样式保留（重建不丢装饰）
+    view.dispatch({ selection: { anchor: 1 } })
+    expect(host.textContent).not.toContain('#')
+    expect(host.querySelector('.cm-h1')).toBeTruthy()
 
     view.destroy()
     host.remove()

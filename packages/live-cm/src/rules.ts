@@ -21,7 +21,9 @@ import {
   CodeLangWidget,
   HrWidget,
   ImageWidget,
+  MathSplitWidget,
   MathWidget,
+  MermaidSplitWidget,
   MermaidWidget,
   TableWidget,
 } from './widgets'
@@ -54,11 +56,14 @@ function parseImageParts(text: string): { alt: string; src: string } {
  * @param range 可选装配区间：只产出与该文档区间相交的装饰（TUI 视口渲染用，
  *   10k 行文档每键全量重算 60ms+ → 视口内 <2ms）。缺省 = 全文档（桌面行为不变）。
  *   区间内产出与全量计算完全一致（按块状态无关，无跨块副作用）。
+ * @param opts.splitBlocks 块级数学/mermaid 用分栏 Widget（左预览右源码，飞书式）。
+ *   仅桌面启用；缺省保持传统渲染态（TUI 语义不变）。
  */
 export function buildLiveDecorations(
   state: EditorState,
   extraActive: { from: number; to: number }[] = [],
   range?: { from: number; to: number },
+  opts?: { splitBlocks?: boolean },
 ): Range<Decoration>[] {
   // 源码模式（⌘/）：语法符号全部可见（着色由 markdown 基础高亮提供），仅保留块样式与行内样式，
   // 并挂行号槽 + 当前行高亮（viewModes 的 Compartment）——Typora 源码视图同款
@@ -83,6 +88,11 @@ export function buildLiveDecorations(
     const b = nearestBlock(blocks, pos)
     return b === null || active.has(b)
   }
+
+  /** 选区落入行内区间（如光标插入公式内部）：该行内 Widget 回到源码态，
+   *  与 mermaid/代码围栏的整块显源码语义一致——否则公式在光标进入后无法编辑 */
+  const inlineActive = (from: number, to: number): boolean =>
+    state.selection.ranges.some((r) => r.from < to && r.to > from)
 
   /** IME 组合冻结区间：保持纯源码，避免组合期间装饰 DOM 切换打断输入法 */
   const frozen = (from: number, to: number): boolean =>
@@ -110,7 +120,7 @@ export function buildLiveDecorations(
     let skipChildren = false
     switch (node.name) {
       case 'InlineMath': {
-        if (!frozen(node.from, node.to)) {
+        if (!inlineActive(node.from, node.to) && !frozen(node.from, node.to)) {
           const tex = doc.sliceString(node.from + 1, node.to - 1)
           out.push(Decoration.replace({ widget: new MathWidget(tex, false), block: false }).range(node.from, node.to))
         }
@@ -118,9 +128,18 @@ export function buildLiveDecorations(
       }
       case 'Paragraph': {
         // 块级数学：整个段落就是 $$...$$（无自定义块级解析器的轻量方案）
-        if (!frozen(node.from, node.to)) {
-          const raw = doc.sliceString(node.from, node.to)
-          if (raw.startsWith('$$') && raw.endsWith('$$') && raw.length > 4) {
+        const raw = doc.sliceString(node.from, node.to)
+        if (raw.startsWith('$$') && raw.endsWith('$$') && raw.length > 4) {
+          if (opts?.splitBlocks) {
+            // 分栏模式：始终渲染（左预览右源码），失焦同步回文档
+            out.push(
+              Decoration.replace({
+                widget: new MathSplitWidget(raw.slice(2, -2).trim(), node.from, node.to),
+                block: true,
+              }).range(node.from, node.to),
+            )
+            skipChildren = true
+          } else if (!shown(node.from) && !frozen(node.from, node.to)) {
             out.push(
               Decoration.replace({
                 widget: new MathWidget(raw.slice(2, -2).trim(), true),
@@ -311,14 +330,26 @@ export function buildLiveDecorations(
           const code = node.getChild('CodeText')
           const lang = info ? doc.sliceString(info.from, info.to) : ''
           const isMermaid = lang.trim().toLowerCase() === 'mermaid'
-          if (isMermaid && code && !shown(node.from)) {
-            out.push(
-              Decoration.replace({
-                widget: new MermaidWidget(doc.sliceString(code.from, code.to)),
-                block: true,
-              }).range(node.from, node.to),
-            )
-            skipChildren = true
+          if (isMermaid && code) {
+            const mermaidCode = doc.sliceString(code.from, code.to)
+            if (opts?.splitBlocks) {
+              // 分栏模式：始终渲染（左图表右源码），失焦同步回文档
+              out.push(
+                Decoration.replace({
+                  widget: new MermaidSplitWidget(mermaidCode, node.from, node.to),
+                  block: true,
+                }).range(node.from, node.to),
+              )
+              skipChildren = true
+            } else if (!shown(node.from)) {
+              out.push(
+                Decoration.replace({
+                  widget: new MermaidWidget(mermaidCode),
+                  block: true,
+                }).range(node.from, node.to),
+              )
+              skipChildren = true
+            }
           } else if (!isMermaid) {
             // 语言选择器（闭合围栏行尾）；首行的 ```lang 源码本身就是直接编辑入口
             const openingMark = node.getChild('CodeMark')

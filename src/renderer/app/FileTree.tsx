@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import * as ContextMenu from '@radix-ui/react-context-menu'
 import type { FileEntry, FileSortMode } from '@shared/ipc'
-import { basename } from '@yupmark/live-cm/paths'
+import { basename, dirname } from '@yupmark/live-cm/paths'
 import { useWorkspaceStore } from './store/workspaceStore'
 import {
   filterFlat,
@@ -46,6 +46,11 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
   const tree = useWorkspaceStore((s) => s.tree)
   const loading = useWorkspaceStore((s) => s.treeLoading)
   const root = useWorkspaceStore((s) => s.workspaceRoot)
+  const tabs = useWorkspaceStore((s) => s.tabs)
+  const activeId = useWorkspaceStore((s) => s.activeId)
+  const activePath = tabs.find((x) => x.id === activeId)?.path ?? null
+  /** 单文件模式（无工作区）下展示已打开的文档；只列文件本身，不牵出目录 */
+  const opened = useMemo(() => tabs.flatMap((t) => (t.path ? [{ id: t.id, path: t.path }] : [])), [tabs])
   const [prompt, setPrompt] = useState<PromptState | null>(null)
 
   const refresh = () => void useWorkspaceStore.getState().refreshTree()
@@ -127,27 +132,45 @@ export function FileTree({ query, view, sort }: FileTreeProps) {
 
   if (!root) {
     return (
-      <div className="file-tree file-tree--empty">
-        <div className="file-tree__empty-actions">
-          <button
-            type="button"
-            className="file-tree__open-btn"
-            onClick={() => void useWorkspaceStore.getState().openWorkspace()}
-          >
-            {t('sidebar.openFolder')}
-          </button>
-          <button
-            type="button"
-            className="file-tree__open-btn"
-            onClick={() =>
-              void window.yupmark.openFileDialog().then((res) => {
-                if (res.ok) useWorkspaceStore.getState().openDoc(res.data.path, res.data.content)
-              })
-            }
-          >
-            {t('sidebar.openFile')}
-          </button>
-        </div>
+      <div className={`file-tree file-tree--empty${opened.length > 0 ? ' file-tree--has-opened' : ''}`}>
+        {opened.length > 0 ? (
+          <div className="file-tree__opened">
+            {opened.map((t) => (
+              <div
+                key={t.id}
+                className={`file-tree__opened-row${t.path === activePath ? ' file-tree__opened-row--active' : ''}`}
+                title={t.path}
+                onClick={() => useWorkspaceStore.getState().activateTab(t.id)}
+              >
+                <IconDoc size={14} />
+                <span className="file-tree__opened-name">{basename(t.path)}</span>
+                <span className="file-tree__opened-dir">{dirname(t.path)}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {opened.length === 0 ? (
+          <div className="file-tree__empty-actions">
+            <button
+              type="button"
+              className="file-tree__open-btn"
+              onClick={() => void useWorkspaceStore.getState().openWorkspace()}
+            >
+              {t('sidebar.openFolder')}
+            </button>
+            <button
+              type="button"
+              className="file-tree__open-btn"
+              onClick={() =>
+                void window.yupmark.openFileDialog().then((res) => {
+                  if (res.ok) useWorkspaceStore.getState().openDoc(res.data.path, res.data.content)
+                })
+              }
+            >
+              {t('sidebar.openFile')}
+            </button>
+          </div>
+        ) : null}
       </div>
     )
   }

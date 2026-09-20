@@ -16,6 +16,7 @@ import { nearestBlock, topLevelBlocks } from './blocks'
 import { docDirField } from './docDir'
 import { smartPasteUrl } from './smartPaste'
 import { openEditorContextMenu, tableMarkdown } from './contextMenu'
+import { MathWidget, MermaidWidget } from './widgets'
 import { effectiveBindings } from './keybindings'
 import {
   focusModeField,
@@ -242,7 +243,7 @@ const liveField = StateField.define<LiveState>({
       tr.startState.field(focusModeField, false) !== tr.state.field(focusModeField, false)
     if (tr.docChanged || tr.selection || freezeChanged || parseAdvanced || viewModeChanged) {
       return {
-        deco: RangeSet.of(buildLiveDecorations(tr.state, freeze ? [freeze] : []), true),
+        deco: RangeSet.of(buildLiveDecorations(tr.state, freeze ? [freeze] : [], undefined, { splitBlocks: true }), true),
         freeze,
       }
     }
@@ -272,6 +273,20 @@ const parseWatcher = ViewPlugin.fromClass(
     }
   },
 )
+
+/** 在装饰集中找 pos 附近的数学/mermaid 替换区间，返回可置入的内部锚点（无则 null）。
+ *  供点击渲染结果进入编辑：锚点必须严格落在区间内，才能触发显源码判定 */
+export function revealAnchorAt(decos: DecorationSet, pos: number): number | null {
+  let anchor: number | null = null
+  decos.between(pos - 1, pos + 1, (from, to, deco) => {
+    if (anchor !== null) return
+    const w = deco.spec.widget
+    if ((w instanceof MathWidget || w instanceof MermaidWidget) && to > from + 1) {
+      anchor = Math.min(Math.max(pos, from + 1), to - 1)
+    }
+  })
+  return anchor
+}
 
 /** 找到 pos 所在链接/图片节点的 URL 子节点文本 */
 function urlAt(view: EditorView, pos: number): string | null {
@@ -321,12 +336,27 @@ const interactionHandlers = EditorView.domEventHandlers({
     view.dispatch({ effects: compositionFreeze.of(null) })
   },
   mousedown: (event, view) => {
-    if (event.button !== 0 || !(event.metaKey || event.ctrlKey)) return false
+    if (event.button !== 0) return false
+    if (event.metaKey || event.ctrlKey) {
+      const pos = view.posAtCoords({ x: event.clientX, y: event.clientY })
+      if (pos === null) return false
+      const url = urlAt(view, pos)
+      if (!url) return false
+      window.open(url, '_blank', 'noopener,noreferrer')
+      return true
+    }
+    // 点击行内公式渲染结果 → 光标置入语法区间，原地显源码进入编辑（Typora 行为）。
+    // 块级数学/mermaid 走分栏 Widget（自带源码窗格），不在此列；
+    // Widget 的 ignoreEvent=true 使编辑器不接管其点击，这里统一代管行内公式。
+    const target = event.target
+    if (!(target instanceof Element)) return false
+    if (!target.closest('.cm-math-inline')) return false
     const pos = view.posAtCoords({ x: event.clientX, y: event.clientY })
     if (pos === null) return false
-    const url = urlAt(view, pos)
-    if (!url) return false
-    window.open(url, '_blank', 'noopener,noreferrer')
+    const anchor = revealAnchorAt(view.state.field(liveField).deco, pos)
+    if (anchor === null) return false
+    view.focus()
+    view.dispatch({ selection: { anchor } })
     return true
   },
   // 右键菜单：剪切/复制/粘贴/全选 + 格式 + 插入

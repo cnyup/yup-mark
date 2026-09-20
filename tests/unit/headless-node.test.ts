@@ -53,12 +53,12 @@ describe('headless decoration pipeline（纯 Node，无 DOM）', () => {
     expect(hidden).toContain('**')
   })
 
-  it('光标所在块激活：标记转淡显而非隐藏', () => {
-    // 光标放在标题行首 → 标题块活跃 → `# ` 不应被隐藏（淡显 mark 而非 replace）
+  it('光标所在块：行级标记保持隐藏（仅源码模式/IME 显源码）', () => {
+    // 光标放在标题行首 → 按统一渲染策略，`# ` 仍隐藏（不随光标淡显）
     const decos = buildLiveDecorations(stateAt(0))
     const hidden = hiddenTexts(decos)
-    expect(hidden).not.toContain('# ')
-    // 引用块此时仍非活跃 → 依旧隐藏
+    expect(hidden).toContain('# ')
+    // 引用块非活跃 → 同样隐藏
     expect(hidden).toContain('> ')
   })
 

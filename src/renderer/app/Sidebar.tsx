@@ -92,7 +92,9 @@ export function Sidebar() {
     setSearchOpen(false)
   }
 
-  const filesActive = panel === 'files' && !!root
+  // 文件面板底部工具栏：单文件模式也保留（设置/侧栏开关），
+  // 工作区专属项（目录操作弹层/树列表切换）仅在打开目录后出现
+  const filesActive = panel === 'files'
 
   return (
     <aside className="sidebar">
@@ -166,6 +168,7 @@ export function Sidebar() {
             </button>
           </Tip>
 
+          {root ? (
           <div className="sidebar__dock-ops">
             {opsOpen ? (
               <>
@@ -292,7 +295,9 @@ export function Sidebar() {
               </button>
             </Tip>
           </div>
+          ) : null}
 
+          {root ? (
           <Tip text={view === 'tree' ? t('sidebar.listView') : t('sidebar.treeView')}>
             <button
               type="button"
@@ -303,6 +308,7 @@ export function Sidebar() {
               {view === 'tree' ? <IconList /> : <IconTree />}
             </button>
           </Tip>
+          ) : null}
 
           <Tip text={t('settings.title')}>
             <button

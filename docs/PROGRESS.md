@@ -174,3 +174,11 @@
 - **字体**：正文族预设（跟随主题/无衬线/衬线/楷体/等宽）+ 字号 12–24px 滑杆 + 预览行；行内覆盖 `--content-font`/`--editor-font-size`（用户显式选择优先于主题字体）。
 - **快捷键**：内核 `keybindings.ts` 命令注册表（33 条编辑器命令 + 2 条应用面板命令，默认键 = Typora 对照，双平台）；设置页分组展示 + 点「修改」按键捕获重绑（裸字母/数字拒绝、Esc 取消、冲突自动让位并提示、逐条/全部重置）；生效链路 = docState 参数化注入 + EditorHost 订阅 Compartment 热重配（同一 Compartment 禁止重复出现，覆盖走 baseExtensions 参数而非追加）。菜单栏加速键暂不参与自定义（页面有注明）。
 - **验证**：新增 keybindings.test 6 用例（注册表默认/覆盖/捕获/匹配/显示化/热重配）+ modals.test 改造 SettingsPage 用例 → **43 文件 / 331 用例**全绿；typecheck×3 + lint + build:web 通过。
+
+## 19. GUI 手验期修复与渲染语义收口（2026-09-20）
+
+- **侧栏无反应修复（方案二改，用户拍板）**：⌘O 打开单个文件后侧栏停留在「打开文件/打开目录」空状态——根因是 `openDoc` 只建标签从不设置 `workspaceRoot`。**最终语义：单文件模式不采纳目录**——侧栏空状态改为「已打开文档列表」（只列文件本身，不牵出所在目录内容；当前项高亮可点击切换）+ 底部打开按钮；仅显式「打开目录」才建工作区文件树。工作区树展开状态持久化进 session（`expandedDirs`，session 为 Rust Value 透传零 Rust 改动），会话恢复默认折叠兼容旧 session。新增 workspaceStore 单文件模式/会话展开恢复用例。
+- **公式/mermaid 分栏编辑（飞书云文档式，用户拍板）**：块级数学 `$$…$$` 与 mermaid 围栏在默认编辑模式下改为**分栏 Widget（左可视化预览 / 右源码编辑）**——`MathSplitWidget`/`MermaidSplitWidget`，打字期只更新左栏预览（纯 DOM 不派发事务，IME/光标不打断），失焦一次性 replace 回文档（TableWidget 单元格同款）；mermaid 渲染加 SVG 缓存（code→svg，切主题清空），重建不闪。`buildLiveDecorations` 增 `opts.splitBlocks` 选项仅桌面启用（engine liveField 传入），缺省路径保持传统渲染态——**TUI 语义零变化**。行内公式保留「点击显源码」；根因修复：`MathWidget`/`MermaidWidget` 的 `ignoreEvent=true` 会把 widget 上的事件在 `eventBelongsToEditor` 处整个丢弃（CM6 源码实证），改为 false 后 engine mousedown 代管光标置入。
+- **验证基线：45 文件 / 349 用例全绿**（typecheck×3 + lint 通过）。
+- **渲染语义收口（用户拍板）**：`a317fd3` 的统一策略保留——行内与行级标记（`#`/`>`/`**` 等）默认隐藏，仅 ⌘/ 源码模式或 IME 组合输入临时显源码，光标移动不再触发就近淡显；但**数学公式恢复「光标进入显源码」**（rules.ts InlineMath 用 inlineActive、块级 $$ 用 shown），与 mermaid/代码围栏既有语义对齐——否则公式渲染后无法进入编辑。README/校验样例（samples/style-check.md）描述同步更新。
+- **测试债清理**：对齐 a317fd3 漏改的 4 个文件——m3（数学 Widget 断言随内核恢复直接转绿）、headless-node（活跃块标记保持隐藏）、liveView（光标进入块标记仍隐藏、块样式保留）、search（命中行 cm-mark-dim 断言改 cm-strong）。
