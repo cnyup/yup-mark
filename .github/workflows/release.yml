@@ -18,7 +18,8 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            rust-targets: universal-apple-darwin
+            # universal dmg：rustup 无 universal target，需装双架构由 tauri lipo 合并
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
             build-args: --target universal-apple-darwin
             artifact: macos-dmg
             artifact-path: |
