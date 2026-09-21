@@ -182,3 +182,10 @@
 - **验证基线：45 文件 / 349 用例全绿**（typecheck×3 + lint 通过）。
 - **渲染语义收口（用户拍板）**：`a317fd3` 的统一策略保留——行内与行级标记（`#`/`>`/`**` 等）默认隐藏，仅 ⌘/ 源码模式或 IME 组合输入临时显源码，光标移动不再触发就近淡显；但**数学公式恢复「光标进入显源码」**（rules.ts InlineMath 用 inlineActive、块级 $$ 用 shown），与 mermaid/代码围栏既有语义对齐——否则公式渲染后无法进入编辑。README/校验样例（samples/style-check.md）描述同步更新。
 - **测试债清理**：对齐 a317fd3 漏改的 4 个文件——m3（数学 Widget 断言随内核恢复直接转绿）、headless-node（活跃块标记保持隐藏）、liveView（光标进入块标记仍隐藏、块样式保留）、search（命中行 cm-mark-dim 断言改 cm-strong）。
+
+## 20. 发版通道统一（2026-09-21，用户拍板）
+
+- **决策**：废除 `tui-v*` 双轨 tag——单一 `v*` 标签触发合并后的 `release.yml`：三平台桌面安装包（dmg/nsis/AppImage+deb）+ TUI npm tarball 挂**同一个 GitHub Release**（draft）。
+- **版本锁步**：统一发版要求 `tauri.conf.json` 与 `packages/tui/package.json` 版本一致（tui job 内校验 tag == 包版本，不一致直接红）；TUI 包版本 bump 至 0.3.0 与桌面对齐，lockfile 同步。
+- **README**：终端版安装命令从 `tui-v0.2.0` 切到 `v0.3.0` 产物路径（中英两处）。
+- npm 官方源发布仍为手动（`cd packages/tui && npm publish`），与新通道不冲突。

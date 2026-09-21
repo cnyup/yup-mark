@@ -1,6 +1,6 @@
 {
   "name": "yupmark-tui",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "YupMark in the terminal — Typora-style live-render Markdown TUI editor powered by @yupmark/live-cm",
   "license": "MIT",
   "type": "module",

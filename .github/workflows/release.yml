@@ -1,10 +1,15 @@
-name: desktop-release
+name: release
 
-# 桌面安装包发布：推 v* 标签 → 三平台构建 → GitHub Release
-# （与 tui-v* 标签的 tui-release.yml 互不冲突；原 electron release.yml 已随 Tauri 迁移退役）
+# 统一发版：推 v* 标签 → 三平台桌面安装包 + TUI npm tarball → 同一 GitHub Release。
+# 双线版本锁步：tag v0.3.0 要求 tauri.conf 与 packages/tui 均为 0.3.0（tui job 内校验）。
+# npm 官方源发布保持手动（cd packages/tui && npm publish），与本流水线不冲突。
+
 on:
   push:
     tags: ['v*']
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -70,8 +75,53 @@ jobs:
           path: ${{ matrix.artifact-path }}
           if-no-files-found: error
 
+  tui:
+    name: TUI tarball
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Tag must match TUI package version（双线版本锁步）
+        run: |
+          TAGVER="${GITHUB_REF_NAME#v}"
+          PKGVER=$(node -p "require('./packages/tui/package.json').version")
+          if [ "$TAGVER" != "$PKGVER" ]; then
+            echo "::error::tag $GITHUB_REF_NAME != packages/tui version $PKGVER（统一发版要求两线版本一致）"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build dist bundle
+        run: node packages/tui/scripts/build-dist.mjs
+
+      - name: Smoke the bundle (non-TTY preview)
+        run: |
+          node packages/tui/dist/cli.mjs samples/m3-demo.md > /tmp/tui-preview.txt
+          grep -q "打开 YupMark" /tmp/tui-preview.txt   # 流程图字符画
+          grep -q "用户" /tmp/tui-preview.txt            # 时序图字符画
+
+      - name: Pack tarball
+        run: |
+          cd packages/tui
+          npm pack --silent
+          mv yupmark-tui-*.tgz "$GITHUB_WORKSPACE/"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tui-tarball
+          path: yupmark-tui-*.tgz
+          if-no-files-found: error
+
   release:
-    needs: build
+    needs: [build, tui]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

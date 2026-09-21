@@ -45,7 +45,7 @@
 
 ```bash
 # 方式一：GitHub Release（无需任何账号）
-npm install -g https://github.com/cnyup/yup-mark/releases/download/tui-v0.2.0/yupmark-tui-0.2.0.tgz
+npm install -g https://github.com/cnyup/yup-mark/releases/download/v0.3.0/yupmark-tui-0.3.0.tgz
 yupmark 文档.md                 # 打开/编辑单个文件（自动保存）
 yupmark .                       # 目录模式（文件树 + 多标签）
 
@@ -104,7 +104,7 @@ The same Markdown engine, running in your terminal — no desktop app required:
 
 ```bash
 # Option 1: GitHub Release (no account needed)
-npm install -g https://github.com/cnyup/yup-mark/releases/download/tui-v0.2.0/yupmark-tui-0.2.0.tgz
+npm install -g https://github.com/cnyup/yup-mark/releases/download/v0.3.0/yupmark-tui-0.3.0.tgz
 yupmark notes.md               # open/edit a single file (autosave)
 yupmark .                      # directory mode (file tree + tabs)
 
