@@ -137,4 +137,5 @@ jobs:
         with:
           draft: true
           generate-release-notes: true
-          files: bundles/*
+          # **/*：linux artifact 多路径上传时带 appimage//deb 子目录，需递归匹配
+          files: bundles/**/*

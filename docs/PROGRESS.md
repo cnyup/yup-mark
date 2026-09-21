@@ -189,3 +189,4 @@
 - **版本锁步**：统一发版要求 `tauri.conf.json` 与 `packages/tui/package.json` 版本一致（tui job 内校验 tag == 包版本，不一致直接红）；TUI 包版本 bump 至 0.3.0 与桌面对齐，lockfile 同步。
 - **README**：终端版安装命令从 `tui-v0.2.0` 切到 `v0.3.0` 产物路径（中英两处）。
 - npm 官方源发布仍为手动（`cd packages/tui && npm publish`），与新通道不冲突。
+- **首跑修正两处**：mac universal 构建需装 `aarch64/x86_64-apple-darwin` 双架构 target（rustup 无 universal target，tauri lipo 合并）；release 上传 glob 需 `bundles/**/*` 递归（linux artifact 多路径上传带 appimage//deb 子目录）。v0.3.0 draft Release 五产物齐全：dmg 8.4M / nsis 3.7M / AppImage 77M / deb 4.7M / tui tgz 0.6M。
